@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import QrScanner from '@/Components/QrScanner.vue';
 
 const props = defineProps({
     profesores: {type: Array, default: () => []},
@@ -12,6 +13,7 @@ const props = defineProps({
 const cursoSeleccionado = ref(''); // ← guarda el curso seleccionado
 const diaSeleccionado   = ref('')
 const horarioSeleccionado = ref(null);
+const mostrarScanner      = ref(false); // ← controla el modal
 
 // Dias unicos disponibles en el horario
 const diasDisponibles = computed(() => {
@@ -27,6 +29,8 @@ const horariosFiltrados = computed(() => {
 
 const seleccionarHorario = (horario) => {
     horarioSeleccionado.value = horario;
+    mostrarScanner.value = false; // resetear scanner si cambia horario
+
 };
 
 const logout = () => {
@@ -38,6 +42,13 @@ const logout = () => {
 <template>
     <AuthenticatedLayout>
         <Head title="profesores"></Head>
+
+        <!-- Modal del escáner -->
+        <QrScanner
+            v-if="mostrarScanner && horarioSeleccionado"
+            :schedule-id="horarioSeleccionado.id"
+            @close="mostrarScanner = false"
+        />
 
         <div class="py-12 max-w-5xl mx-auto space-y-8 px-4">
 
@@ -128,6 +139,34 @@ const logout = () => {
                 <p><span class="font-medium">Grado:</span> {{ horarioSeleccionado.grade }}</p>
                 <p><span class="font-medium">Sección:</span> {{ horarioSeleccionado.section }}</p>
                 <p><span class="font-medium">Horario:</span> {{ horarioSeleccionado.start_time }} - {{ horarioSeleccionado.end_time }}</p>
+            </div>
+
+            <!-- Horario seleccionado + botón scanner -->
+            <div v-if="horarioSeleccionado" class="bg-blue-50 border border-blue-200 rounded p-4 space-y-3">
+                <h4 class="font-semibold text-blue-800">Horario seleccionado:</h4>
+                <p><span class="font-medium">Día:</span> {{ horarioSeleccionado.dia }}</p>
+                <p><span class="font-medium">Curso:</span> {{ horarioSeleccionado.subject }}</p>
+                <p><span class="font-medium">Grado:</span> {{ horarioSeleccionado.grade }}</p>
+                <p><span class="font-medium">Sección:</span> {{ horarioSeleccionado.section }}</p>
+                <p><span class="font-medium">Horario:</span> {{ horarioSeleccionado.start_time }} - {{ horarioSeleccionado.end_time }}</p>
+
+                <!-- ← Botón escanear QR -->
+                <button
+                    @click="mostrarScanner = true"
+                    class="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-5 rounded flex items-center gap-2"
+                >
+                    📷 Escanear QR de Asistencia
+                </button>
+            </div>
+
+            <!-- Generar QR PDF -->
+            <div>
+                <a 
+                    :href="route('profesor.qr')"
+                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+                    >
+                    Generar Códigos QR
+                </a>
             </div>
 
             <!-- Logout -->

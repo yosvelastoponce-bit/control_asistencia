@@ -2,6 +2,8 @@
 use App\Http\Controllers\Profesor\ProfesorLoginController;
 use App\Http\Controllers\Curso\CursoController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QrCode\QrCodeController;
+use App\Http\Controllers\Attendance\AttendanceController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -34,7 +36,13 @@ Route::get('/profesor/login', [ProfesorLoginController::class, 'showLogin'])->na
 Route::post('/profesor/login', [ProfesorLoginController::class, 'login'])->name('profesor.login.post');
 Route::post('/profesor/logout', [ProfesorLoginController::class, 'logout'])->name('profesor.logout');
 
-Route::resource('profesor', ProfesorLoginController::class)->except(['show']);
+// Rutas protegidas — solo si está logueado como profesor
+Route::middleware('auth:app_user')->group(function () {
+    Route::resource('profesor', ProfesorLoginController::class)->except(['show']);
+    Route::get('/profesor/qr-codes', [QrCodeController::class, 'generateQr'])->name('profesor.qr');
+    Route::get('/attendance/scan', fn() => redirect()->route('profesor.index'))->name('attendance.scan.get');
+    Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->name('attendance.scan');
+});
 
 // Rutas cursos
 
