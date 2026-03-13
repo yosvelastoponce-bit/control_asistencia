@@ -1,9 +1,17 @@
 <?php
 use App\Http\Controllers\Profesor\ProfesorLoginController;
-use App\Http\Controllers\Curso\CursoController;
+// use App\Http\Controllers\Curso\CursoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QrCode\QrCodeController;
 use App\Http\Controllers\Attendance\AttendanceController;
+use App\Http\Controllers\Director\DirectorController;
+use App\Http\Controllers\Director\ProfesorController;
+use App\Http\Controllers\Director\EstudianteController;
+use App\Http\Controllers\Director\GradoController;
+use App\Http\Controllers\Director\SeccionController;
+use App\Http\Controllers\Director\CursoController;
+use App\Http\Controllers\Director\EstudianteImportController;
+use App\Http\Controllers\Director\HorarioController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -42,9 +50,40 @@ Route::middleware('auth:app_user')->group(function () {
     Route::get('/profesor/qr-codes', [QrCodeController::class, 'generateQr'])->name('profesor.qr');
     Route::get('/attendance/scan', fn() => redirect()->route('profesor.index'))->name('attendance.scan.get');
     Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->name('attendance.scan');
+    Route::post('/director/horarios', [HorarioController::class, 'store'])->name('director.horarios.store');
+    Route::delete('/director/horarios/{id}', [HorarioController::class, 'destroy'])->name('director.horarios.destroy');
 });
 
-// Rutas cursos
+// Rutas públicas (registro y login)
+// Rutas públicas (registro y login)
+Route::get('/director/register', [DirectorController::class, 'showRegister'])->name('director.register');
+Route::post('/director/register', [DirectorController::class, 'register'])->name('director.register.post');
 
-Route::resource('curso', CursoController::class);
+Route::get('/director/login', [DirectorController::class, 'showLogin'])->name('director.login');
+Route::post('/director/login', [DirectorController::class, 'login'])->name('director.login.post');
+
+Route::middleware('auth:app_user')->group(function () {
+
+    // Director
+    Route::post('/director/logout',          [DirectorController::class, 'logout'])->name('director.logout');
+    Route::get('/director/dashboard',        [DirectorController::class, 'dashboard'])->name('director.dashboard');
+
+    // Grados, Secciones, Cursos (CRUD simple)
+    Route::apiResource('director/grados',    GradoController::class)->names('director.grados');
+    Route::apiResource('director/secciones', SeccionController::class)->names('director.secciones');
+    Route::apiResource('director/cursos',    CursoController::class)->names('director.cursos');
+
+    //Cargar datos masivos Estudiantes
+    Route::post('/director/estudiantes/import', [EstudianteImportController::class, 'import'])
+     ->name('director.estudiantes.import');
+
+    // Profesores y Estudiantes
+    Route::post('/director/profesores',         [ProfesorController::class, 'store'])->name('director.profesores.store');
+    Route::delete('/director/profesores/{id}',  [ProfesorController::class, 'destroy'])->name('director.profesores.destroy');
+
+    Route::post('/director/estudiantes',        [EstudianteController::class, 'store'])->name('director.estudiantes.store');
+    Route::delete('/director/estudiantes/{id}', [EstudianteController::class, 'destroy'])->name('director.estudiantes.destroy');
+});
+
+// Route::resource('curso', CursoController::class);
 require __DIR__.'/auth.php';

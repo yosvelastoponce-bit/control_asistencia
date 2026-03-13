@@ -7,15 +7,19 @@ use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\QrCode as QrCodeModel;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class QrCodeController extends Controller
 {
-    // Genera QR codes para todos los estudiantes que no tienen uno
-    // y devuelve un PDF listo para imprimir
     public function generateQr(Request $request)
     {
+        // Obtener el school_id del director autenticado
+        $schoolId = Auth::guard('app_user')->user()->school_id;
+
+        // Solo estudiantes de ese colegio
         $students = Student::with('qrCode')
+            ->where('school_id', $schoolId)
             ->orderBy('name')
             ->get();
 
@@ -24,39 +28,27 @@ class QrCodeController extends Controller
             if (!$student->qrCode) {
                 QrCodeModel::create([
                     'student_id' => $student->id,
-                    'uuid'       => Str::uuid(), // genera UUID largo ej: 3f5a8b12-81d4-41f2-b67c-9a13e9f21c21
+                    'uuid'       => Str::uuid(),
                     'active'     => true,
                 ]);
             }
         }
 
-        // Recargar con los QR ya creados
+        // Recargar con QR ya creados, mismo filtro por school_id
         $students = Student::with('qrCode')
+            ->where('school_id', $schoolId)
             ->orderBy('name')
             ->get()
             ->map(function ($student) {
-                // Generar imagen QR en base64 para el HTML
-                // $qrImage = base64_encode(
-                //     \QrCode::format('png')
-                //         ->size(150)
-                //         ->errorCorrection('H')
-                //         ->generate($student->qrCode->uuid)
-                // );
-                // return [
-                //     'name'     => $student->name,
-                //     'uuid'     => $student->qrCode->uuid,
-                //     'qr_image' => $qrImage,
-                // ];
-                
                 $qrSvg = \QrCode::format('svg')
-                ->size(150)
-                ->errorCorrection('H')
-                ->generate($student->qrCode->uuid);
-                
+                    ->size(150)
+                    ->errorCorrection('H')
+                    ->generate($student->qrCode->uuid);
+
                 return [
                     'name'   => $student->name,
                     'uuid'   => $student->qrCode->uuid,
-                    'qr_svg' => base64_encode($qrSvg), // ← base64 del SVG
+                    'qr_svg' => base64_encode($qrSvg),
                 ];
             });
 

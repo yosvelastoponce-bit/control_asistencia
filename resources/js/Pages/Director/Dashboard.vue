@@ -1,0 +1,722 @@
+<script setup>
+import { ref, computed } from 'vue'
+import { router } from '@inertiajs/vue3'
+import axios from 'axios'
+
+const props = defineProps({
+  director:    Object,
+  school:      Object,
+  stats:       Object,
+  grados:      { type: Array, default: () => [] },
+  secciones:   { type: Array, default: () => [] },
+  cursos:      { type: Array, default: () => [] },
+  profesores:  { type: Array, default: () => [] },
+  estudiantes: { type: Array, default: () => [] },
+})
+
+const sidebarOpen   = ref(false)
+const activeSection = ref('inicio')
+
+const navItems = [
+  { id: 'inicio',       label: 'Inicio' },
+  { id: 'profesores',   label: 'Profesores' },
+  { id: 'estudiantes',  label: 'Estudiantes' },
+  { id: 'cursos',       label: 'Cursos' },
+]
+
+const currentSectionLabel = computed(
+  () => navItems.find(i => i.id === activeSection.value)?.label ?? ''
+)
+
+const statCards = [
+  { key: 'profesores',  label: 'Profesores' },
+  { key: 'estudiantes', label: 'Estudiantes' },
+  { key: 'cursos',      label: 'Cursos' },
+  { key: 'grados',      label: 'Grados' },
+]
+
+const logout = () => router.post(route('director.logout'))
+
+// ── CRUD Cursos ───────────────────────────────────────────────────────────────
+const listaCursos    = ref([...props.cursos])
+const nombreCurso    = ref('')
+const editandoCurso  = ref(null)
+const loadingCurso   = ref(false)
+const errorCurso     = ref('')
+
+const guardarCurso = async () => {
+  const nombre = nombreCurso.value.trim()
+  if (!nombre) { errorCurso.value = 'El nombre no puede estar vacío.'; return }
+  loadingCurso.value = true
+  errorCurso.value   = ''
+  try {
+    if (editandoCurso.value) {
+      const { data } = await axios.put(route('director.cursos.update', editandoCurso.value), { name: nombre })
+      const idx = listaCursos.value.findIndex(i => i.id === editandoCurso.value)
+      if (idx !== -1) listaCursos.value[idx] = data
+      editandoCurso.value = null
+    } else {
+      const { data } = await axios.post(route('director.cursos.store'), { name: nombre })
+      listaCursos.value.push(data)
+    }
+    nombreCurso.value = ''
+  } catch (err) {
+    errorCurso.value = err.response?.data?.message ?? 'Error al guardar.'
+  } finally {
+    loadingCurso.value = false
+  }
+}
+
+const eliminarCurso = async (id) => {
+  if (!confirm('¿Eliminar este curso?')) return
+  try {
+    await axios.delete(route('director.cursos.destroy', id))
+    listaCursos.value = listaCursos.value.filter(i => i.id !== id)
+  } catch (err) {
+    alert(err.response?.data?.message ?? 'No se pudo eliminar.')
+  }
+}
+
+// ── PROFESORES ────────────────────────────────────────────────────────────────
+const listaProfesores     = ref([...props.profesores])
+const mostrarFormProfesor = ref(false)
+const loadingProfesor     = ref(false)
+const erroresProfesor     = ref({})
+
+const formProfesor = ref({ name: '', email: '', password: '', specialty: '' })
+
+const resetFormProfesor = () => {
+  formProfesor.value  = { name: '', email: '', password: '', specialty: '' }
+  erroresProfesor.value = {}
+}
+
+const guardarProfesor = async () => {
+  loadingProfesor.value = true
+  erroresProfesor.value = {}
+  try {
+    const { data } = await axios.post(route('director.profesores.store'), formProfesor.value)
+    listaProfesores.value.push(data)
+    resetFormProfesor()
+    mostrarFormProfesor.value = false
+  } catch (err) {
+    erroresProfesor.value = err.response?.data?.errors ?? {}
+    if (!Object.keys(erroresProfesor.value).length)
+      erroresProfesor.value._general = err.response?.data?.message ?? 'Error al guardar.'
+  } finally {
+    loadingProfesor.value = false
+  }
+}
+
+const eliminarProfesor = async (id) => {
+  if (!confirm('¿Eliminar este profesor?')) return
+  try {
+    await axios.delete(route('director.profesores.destroy', id))
+    listaProfesores.value = listaProfesores.value.filter(p => p.id !== id)
+  } catch (err) {
+    alert(err.response?.data?.message ?? 'No se pudo eliminar.')
+  }
+}
+
+// ── ESTUDIANTES ───────────────────────────────────────────────────────────────
+const listaEstudiantes = ref([...props.estudiantes])
+const loadingEstudiante = ref(false)
+const erroresEstudiante = ref({})
+const successMsg        = ref('')
+
+// Grados fijos
+const gradosDisponibles = [
+  { id: 1, label: '1er Grado' },
+  { id: 2, label: '2do Grado' },
+  { id: 3, label: '3er Grado' },
+  { id: 4, label: '4to Grado' },
+  { id: 5, label: '5to Grado' },
+]
+
+// Secciones predefinidas
+const seccionesDisponibles = ['Única', 'A', 'B', 'C']
+
+const formEstudiante = ref({
+  name:       '',
+  dni:        '',
+  password:   '',
+  grade_id:   null,
+  section_id: null,
+  // Para enviar al backend si no existen aún
+  grade_name:   '',
+  section_name: '',
+})
+
+const gradoSeleccionado   = ref(null)  // objeto { id, label }
+const seccionSeleccionada = ref('')    // string 'Única' | 'A' | 'B' | 'C'
+
+const seleccionarGrado = (grado) => {
+  gradoSeleccionado.value         = grado
+  formEstudiante.value.grade_name = grado.label
+}
+
+const seleccionarSeccion = (seccion) => {
+  seccionSeleccionada.value         = seccion
+  formEstudiante.value.section_name = seccion
+}
+
+const resetFormEstudiante = () => {
+  formEstudiante.value    = { name: '', dni: '', password: '', grade_id: null, section_id: null, grade_name: '', section_name: '' }
+  gradoSeleccionado.value   = null
+  seccionSeleccionada.value = ''
+  erroresEstudiante.value   = {}
+}
+
+const guardarEstudiante = async () => {
+  erroresEstudiante.value = {}
+  successMsg.value        = ''
+
+  // Validaciones en el cliente
+  if (!formEstudiante.value.name.trim())    { erroresEstudiante.value.name    = ['El nombre es obligatorio.']; }
+  if (!formEstudiante.value.dni.trim())     { erroresEstudiante.value.dni     = ['El DNI es obligatorio.']; }
+  if (!formEstudiante.value.password)       { erroresEstudiante.value.password = ['La contraseña es obligatoria.']; }
+  if (!gradoSeleccionado.value)             { erroresEstudiante.value.grade    = ['Selecciona un grado.']; }
+  if (!seccionSeleccionada.value)           { erroresEstudiante.value.section  = ['Selecciona una sección.']; }
+
+  if (Object.keys(erroresEstudiante.value).length) return
+
+  loadingEstudiante.value = true
+  try {
+    const payload = {
+      name:         formEstudiante.value.name,
+      dni:          formEstudiante.value.dni,
+      password:     formEstudiante.value.password,
+      grade_name:   gradoSeleccionado.value.label,
+      section_name: seccionSeleccionada.value,
+    }
+    const { data } = await axios.post(route('director.estudiantes.store'), payload)
+    listaEstudiantes.value.push(data)
+    successMsg.value = `Estudiante "${data.name}" registrado exitosamente.`
+    resetFormEstudiante()
+  } catch (err) {
+    erroresEstudiante.value = err.response?.data?.errors ?? {}
+    if (!Object.keys(erroresEstudiante.value).length)
+      erroresEstudiante.value._general = err.response?.data?.message ?? 'Error al guardar.'
+  } finally {
+    loadingEstudiante.value = false
+  }
+}
+
+// ── CARGA MASIVA ──────────────────────
+const validos = ['csv']
+const mostrarCargaMasiva  = ref(false)
+const arrastrandoArchivo  = ref(false)
+const archivoSeleccionado = ref(null)
+const loadingCarga        = ref(false)
+const erroresCarga        = ref([])
+const resultadoCarga      = ref('')
+
+const onFileChange = (e) => {
+  archivoSeleccionado.value = e.target.files[0] ?? null
+  erroresCarga.value        = []
+  resultadoCarga.value      = ''
+}
+
+const onFileDrop = (e) => {
+  arrastrandoArchivo.value  = false
+  const file = e.dataTransfer.files[0]
+  if (!file) return
+  const validos = ['xlsx', 'xls', 'csv']
+  const ext = file.name.split('.').pop().toLowerCase()
+  if (!validos.includes(ext)) {
+    erroresCarga.value = ['Solo se aceptan archivos .xlsx, .xls o .csv']
+    return
+  }
+  archivoSeleccionado.value = file
+  erroresCarga.value        = []
+  resultadoCarga.value      = ''
+}
+
+const subirArchivo = async () => {
+  if (!archivoSeleccionado.value) return
+  loadingCarga.value   = true
+  erroresCarga.value   = []
+  resultadoCarga.value = ''
+
+  const formData = new FormData()
+  formData.append('archivo', archivoSeleccionado.value)
+
+  try {
+    const { data } = await axios.post(route('director.estudiantes.import'), formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    // El backend devuelve { imported: N, errors: [...] }
+    resultadoCarga.value = `${data.imported} estudiante(s) importados correctamente.`
+    if (data.errors?.length) erroresCarga.value = data.errors
+    if (data.students?.length) listaEstudiantes.value.push(...data.students)
+
+    archivoSeleccionado.value = null
+  } catch (err) {
+    erroresCarga.value = err.response?.data?.errors ?? [err.response?.data?.message ?? 'Error al importar.']
+  } finally {
+    loadingCarga.value = false
+  }
+}
+</script>
+
+<template>
+  <div class="min-h-screen bg-white text-gray-900">
+
+    <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
+    <aside
+      class="fixed left-0 top-0 h-full w-60 bg-gray-100 border-r border-gray-200 flex flex-col z-40 transition-transform duration-300"
+      :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+    >
+      <div class="p-5 border-b border-gray-200">
+        <p class="font-bold text-sm truncate">{{ school?.name }}</p>
+        <p class="text-gray-500 text-xs mt-0.5">Cód: {{ school?.code }}</p>
+      </div>
+
+      <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto">
+        <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider px-3 pt-3 pb-2">Menú</p>
+        <button
+          v-for="item in navItems" :key="item.id"
+          @click="activeSection = item.id; sidebarOpen = false"
+          class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+          :class="activeSection === item.id
+            ? 'bg-gray-800 text-white'
+            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'"
+        >
+          {{ item.label }}
+        </button>
+      </nav>
+
+      <div class="p-4 border-t border-gray-200">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+            {{ director?.name?.charAt(0)?.toUpperCase() }}
+          </div>
+          <div class="min-w-0">
+            <p class="text-gray-900 text-sm font-medium truncate">{{ director?.name }}</p>
+            <p class="text-gray-500 text-xs truncate">{{ director?.email }}</p>
+          </div>
+        </div>
+        <button @click="logout"
+          class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors">
+          Cerrar sesión
+        </button>
+      </div>
+    </aside>
+
+    <div v-if="sidebarOpen" @click="sidebarOpen = false"
+      class="fixed inset-0 bg-black bg-opacity-20 z-30 lg:hidden"></div>
+
+    <!-- ── Main ──────────────────────────────────────────────────────────────── -->
+    <div class="lg:pl-60 min-h-screen">
+
+      <header class="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 lg:px-8 py-4 flex items-center gap-4">
+        <button @click="sidebarOpen = true" class="lg:hidden text-gray-500">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <h2 class="text-base font-semibold text-gray-900">{{ currentSectionLabel }}</h2>
+      </header>
+
+      <main class="p-4 lg:p-8">
+
+        <!-- ── INICIO ── -->
+        <section v-if="activeSection === 'inicio'">
+          <p class="text-gray-500 text-sm mb-6">
+            Bienvenido, <span class="text-gray-900 font-semibold">{{ director?.name }}</span>.
+          </p>
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div v-for="stat in statCards" :key="stat.label"
+              class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+              <p class="text-3xl font-bold text-gray-900">{{ stats?.[stat.key] ?? 0 }}</p>
+              <p class="text-gray-500 text-sm mt-1">{{ stat.label }}</p>
+            </div>
+          </div>
+          <h3 class="text-gray-700 font-semibold mb-4">Accesos rápidos</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <button v-for="item in navItems.filter(i => i.id !== 'inicio')" :key="item.id"
+              @click="activeSection = item.id"
+              class="bg-gray-50 border border-gray-200 hover:border-gray-400 rounded-xl p-4 text-left transition-all">
+              <p class="text-gray-900 text-sm font-medium">{{ item.label }}</p>
+              <p class="text-gray-400 text-xs mt-1">→ Gestionar</p>
+            </button>
+          </div>
+        </section>
+
+        <!-- ── PROFESORES ── -->
+        <section v-else-if="activeSection === 'profesores'">
+          <div class="flex items-center justify-between mb-5">
+            <p class="text-gray-500 text-sm">Profesores de tu institución.</p>
+            <button @click="mostrarFormProfesor = !mostrarFormProfesor"
+              class="bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+              {{ mostrarFormProfesor ? 'Cancelar' : '+ Agregar profesor' }}
+            </button>
+          </div>
+
+          <div v-if="mostrarFormProfesor" class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-5">
+            <h3 class="text-gray-900 font-semibold mb-4">Nuevo profesor</h3>
+            <p v-if="erroresProfesor._general" class="text-red-600 text-sm mb-3 bg-red-50 px-3 py-2 rounded-lg">{{ erroresProfesor._general }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Nombre completo *</label>
+                <input v-model="formProfesor.name" type="text" placeholder="Juan Pérez"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-800 focus:border-gray-800"/>
+                <p v-if="erroresProfesor.name" class="text-red-600 text-xs mt-1">{{ erroresProfesor.name[0] }}</p>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Correo electrónico *</label>
+                <input v-model="formProfesor.email" type="email" placeholder="profesor@colegio.pe"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-800 focus:border-gray-800"/>
+                <p v-if="erroresProfesor.email" class="text-red-600 text-xs mt-1">{{ erroresProfesor.email[0] }}</p>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Contraseña *</label>
+                <input v-model="formProfesor.password" type="password" placeholder="Mínimo 8 caracteres"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-800 focus:border-gray-800"/>
+                <p v-if="erroresProfesor.password" class="text-red-600 text-xs mt-1">{{ erroresProfesor.password[0] }}</p>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Especialidad</label>
+                <input v-model="formProfesor.specialty" type="text" placeholder="Ej: Matemática"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-800 focus:border-gray-800"/>
+              </div>
+            </div>
+            <div class="mt-4 flex justify-end">
+              <button @click="guardarProfesor" :disabled="loadingProfesor"
+                class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+                {{ loadingProfesor ? 'Guardando...' : 'Guardar profesor' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="border-b border-gray-200 bg-gray-50">
+                <tr>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">Nombre</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">Email</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">Especialidad</th>
+                  <th class="px-5 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="!listaProfesores.length">
+                  <td colspan="4" class="px-5 py-8 text-center text-gray-400">Sin profesores registrados.</td>
+                </tr>
+                <tr v-for="p in listaProfesores" :key="p.id"
+                  class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                  <td class="px-5 py-3 text-gray-900">{{ p.appUser?.name ?? p.name }}</td>
+                  <td class="px-5 py-3 text-gray-500">{{ p.appUser?.email ?? p.email ?? '—' }}</td>
+                  <td class="px-5 py-3 text-gray-500">{{ p.specialty ?? '—' }}</td>
+                  <td class="px-5 py-3 text-right">
+                    <button @click="eliminarProfesor(p.id)"
+                      class="text-red-600 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors">
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ── ESTUDIANTES ── -->
+        <section v-else-if="activeSection === 'estudiantes'">
+
+          <!-- Mensaje éxito -->
+          <div v-if="successMsg"
+            class="mb-5 bg-green-50 border border-green-300 text-green-700 text-sm px-4 py-3 rounded-lg flex items-center justify-between">
+            <span>{{ successMsg }}</span>
+            <button @click="successMsg = ''" class="text-green-700 hover:text-gray-900 ml-4">✕</button>
+          </div>
+
+          <!-- Error general -->
+          <p v-if="erroresEstudiante._general"
+            class="mb-5 text-red-600 text-sm bg-red-50 px-4 py-3 rounded-lg border border-red-300">
+            {{ erroresEstudiante._general }}
+          </p>
+
+          <!-- ── Formulario en 3 paneles ── -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+
+            <!-- Panel 1: Datos del estudiante -->
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">1</div>
+                <h3 class="text-gray-900 font-semibold text-sm">Datos del estudiante</h3>
+              </div>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Nombre completo *</label>
+                  <input v-model="formEstudiante.name" type="text" placeholder="María García López"
+                    class="w-full bg-white border rounded-lg px-3 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-800 transition-colors"
+                    :class="erroresEstudiante.name ? 'border-red-300' : 'border-gray-300'"/>
+                  <p v-if="erroresEstudiante.name" class="text-red-600 text-xs mt-1">{{ erroresEstudiante.name[0] }}</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">DNI *</label>
+                  <input v-model="formEstudiante.dni" type="text" placeholder="12345678"
+                    class="w-full bg-white border rounded-lg px-3 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-800 transition-colors"
+                    :class="erroresEstudiante.dni ? 'border-red-300' : 'border-gray-300'"/>
+                  <p v-if="erroresEstudiante.dni" class="text-red-600 text-xs mt-1">{{ erroresEstudiante.dni[0] }}</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Contraseña *</label>
+                  <input v-model="formEstudiante.password" type="password" placeholder="Mínimo 8 caracteres"
+                    class="w-full bg-white border rounded-lg px-3 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-800 transition-colors"
+                    :class="erroresEstudiante.password ? 'border-red-300' : 'border-gray-300'"/>
+                  <p v-if="erroresEstudiante.password" class="text-red-600 text-xs mt-1">{{ erroresEstudiante.password[0] }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel 2: Grado -->
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">2</div>
+                <h3 class="text-gray-900 font-semibold text-sm">Grado</h3>
+              </div>
+
+              <p v-if="erroresEstudiante.grade" class="text-red-600 text-xs mb-3">{{ erroresEstudiante.grade[0] }}</p>
+
+              <div class="space-y-2">
+                <button
+                  v-for="grado in gradosDisponibles"
+                  :key="grado.id"
+                  @click="seleccionarGrado(grado)"
+                  class="w-full text-left px-4 py-3 rounded-lg border text-sm font-medium transition-all"
+                  :class="gradoSeleccionado?.id === grado.id
+                    ? 'bg-gray-800 border-gray-800 text-white'
+                    : 'bg-white border-gray-300 text-gray-700 hover:border-gray-800 hover:text-gray-900'"
+                >
+                  <div class="flex items-center justify-between">
+                    <span>{{ grado.label }}</span>
+                    <svg v-if="gradoSeleccionado?.id === grado.id" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel 3: Sección -->
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">3</div>
+                <h3 class="text-gray-900 font-semibold text-sm">Sección</h3>
+              </div>
+
+              <p v-if="erroresEstudiante.section" class="text-red-600 text-xs mb-3">{{ erroresEstudiante.section[0] }}</p>
+
+              <div class="grid grid-cols-2 gap-2">
+                <button
+                  v-for="seccion in seccionesDisponibles"
+                  :key="seccion"
+                  @click="seleccionarSeccion(seccion)"
+                  class="px-4 py-3 rounded-lg border text-sm font-medium transition-all text-center"
+                  :class="seccionSeleccionada === seccion
+                    ? 'bg-gray-800 border-gray-800 text-white'
+                    : 'bg-white border-gray-300 text-gray-700 hover:border-gray-800 hover:text-gray-900'"
+                >
+                  {{ seccion }}
+                </button>
+              </div>
+
+              <!-- Resumen selección -->
+              <div v-if="gradoSeleccionado || seccionSeleccionada" class="mt-4 pt-4 border-t border-gray-200">
+                <p class="text-gray-400 text-xs mb-1">Selección actual:</p>
+                <p class="text-gray-900 text-sm font-medium">
+                  {{ gradoSeleccionado?.label ?? '—' }} — Sección {{ seccionSeleccionada || '—' }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón único guardar -->
+          <div class="flex justify-end mb-8">
+            <button @click="guardarEstudiante" :disabled="loadingEstudiante"
+              class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white font-semibold px-8 py-3 rounded-lg transition-colors flex items-center gap-2">
+              <svg v-if="loadingEstudiante" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              {{ loadingEstudiante ? 'Guardando...' : 'Registrar estudiante' }}
+            </button>
+          </div>
+
+          <!-- Botón toggle carga masiva -->
+          <div class="flex items-center gap-3 mb-6">
+            <div class="flex-1 h-px bg-gray-200"></div>
+            <button @click="mostrarCargaMasiva = !mostrarCargaMasiva"
+              class="flex items-center gap-2 text-gray-500 hover:text-gray-900 text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-300 hover:border-gray-500 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+              </svg>
+              Carga masiva desde Excel
+            </button>
+            <div class="flex-1 h-px bg-gray-200"></div>
+          </div>
+
+          <!-- Panel carga masiva -->
+          <div v-if="mostrarCargaMasiva" class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h3 class="text-gray-900 font-semibold text-sm">Importar estudiantes desde Excel</h3>
+                <p class="text-gray-500 text-xs mt-1">El archivo debe tener las columnas: <span class="text-gray-700 font-mono">nombre, dni, contraseña, grado, sección</span></p>
+              </div>
+              <a href="/plantilla-estudiantes.xlsx" download
+                class="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-xs transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Descargar plantilla
+              </a>
+            </div>
+          
+            <!-- Zona de drop -->
+            <div
+              @dragover.prevent="arrastrandoArchivo = true"
+              @dragleave="arrastrandoArchivo = false"
+              @drop.prevent="onFileDrop"
+              class="border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer"
+              :class="arrastrandoArchivo ? 'border-gray-800 bg-gray-100' : 'border-gray-300 hover:border-gray-500'"
+              @click="$refs.inputArchivo.click()"
+            >
+              <input ref="inputArchivo" type="file" accept=".csv" class="hidden" @change="onFileChange"/>
+          
+              <svg class="w-8 h-8 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+          
+              <p v-if="!archivoSeleccionado" class="text-gray-500 text-sm">
+                Arrastra tu archivo aquí o <span class="text-gray-800">haz clic para seleccionar</span>
+              </p>
+              <p v-else class="text-gray-900 text-sm font-medium">
+                📄 {{ archivoSeleccionado.name }}
+                <span class="text-gray-400 font-normal ml-2">({{ (archivoSeleccionado.size / 1024).toFixed(1) }} KB)</span>
+              </p>
+            </div>
+          
+            <!-- Errores de importación -->
+            <div v-if="erroresCarga.length" class="mt-4 bg-red-50 border border-red-300 rounded-lg p-3">
+              <p class="text-red-700 text-xs font-semibold mb-1">Errores encontrados:</p>
+              <ul class="space-y-0.5">
+                <li v-for="(err, i) in erroresCarga" :key="i" class="text-red-600 text-xs">• {{ err }}</li>
+              </ul>
+            </div>
+          
+            <!-- Resultado exitoso -->
+            <div v-if="resultadoCarga" class="mt-4 bg-green-50 border border-green-300 rounded-lg p-3">
+              <p class="text-green-700 text-sm font-semibold">✓ {{ resultadoCarga }}</p>
+            </div>
+          
+            <div class="mt-4 flex justify-end gap-2">
+              <button @click="archivoSeleccionado = null; erroresCarga = []; resultadoCarga = ''"
+                class="text-gray-500 hover:text-gray-900 text-sm px-4 py-2 rounded-lg border border-gray-300 hover:border-gray-500 transition-colors">
+                Limpiar
+              </button>
+              <button @click="subirArchivo" :disabled="!archivoSeleccionado || loadingCarga"
+                class="bg-gray-800 hover:bg-gray-900 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
+                <svg v-if="loadingCarga" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                {{ loadingCarga ? 'Importando...' : 'Importar estudiantes' }}
+              </button>
+            </div>
+          </div>
+          
+          <!-- Tabla de estudiantes -->
+          <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
+            <div class="px-5 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <h3 class="text-gray-900 font-semibold text-sm">Estudiantes registrados</h3>
+              <a :href="route('profesor.qr')" target="_blank"
+                class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors border border-gray-300">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Descargar QR
+              </a>
+            </div>
+            <table class="w-full text-sm">
+              <thead class="border-b border-gray-200 bg-gray-50">
+                <tr>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">Nombre</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">DNI</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">Grado</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">Sección</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">QR</th>
+                  <th class="px-5 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="!listaEstudiantes.length">
+                  <td colspan="6" class="px-5 py-8 text-center text-gray-400">Sin estudiantes registrados.</td>
+                </tr>
+                <tr v-for="e in listaEstudiantes" :key="e.id"
+                  class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                  <td class="px-5 py-3 text-gray-900">{{ e.name }}</td>
+                  <td class="px-5 py-3 text-gray-500">{{ e.dni }}</td>
+                  <td class="px-5 py-3 text-gray-500">{{ e.grade?.name ?? '—' }}</td>
+                  <td class="px-5 py-3 text-gray-500">{{ e.section?.name ?? '—' }}</td>
+                  <td class="px-5 py-3">
+                    <span v-if="e.qr_code?.active"
+                      class="inline-flex items-center bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full border border-green-300">
+                      ✓ Activo
+                    </span>
+                    <span v-else class="text-gray-400 text-xs">Sin QR</span>
+                  </td>
+                  <td class="px-5 py-3 text-right">
+                    <button @click="eliminarEstudiante(e.id)"
+                      class="text-red-600 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors">
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ── CURSOS ── -->
+        <section v-else-if="activeSection === 'cursos'">
+          <div class="max-w-lg">
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-5">
+              <h3 class="text-gray-900 font-semibold mb-4">{{ editandoCurso ? 'Editar curso' : 'Agregar curso' }}</h3>
+              <div class="flex gap-2">
+                <input v-model="nombreCurso" type="text" placeholder="Ej: Matemática, Comunicación..."
+                  @keyup.enter="guardarCurso"
+                  class="flex-1 bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-800 focus:border-gray-800"/>
+                <button @click="guardarCurso" :disabled="loadingCurso"
+                  class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap">
+                  {{ editandoCurso ? 'Actualizar' : 'Agregar' }}
+                </button>
+                <button v-if="editandoCurso" @click="editandoCurso = null; nombreCurso = ''"
+                  class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-3 py-2.5 rounded-lg transition-colors">✕</button>
+              </div>
+              <p v-if="errorCurso" class="text-red-600 text-xs mt-2">{{ errorCurso }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div v-if="!listaCursos.length" class="px-5 py-8 text-center text-gray-400 text-sm">No hay cursos registrados.</div>
+              <div v-for="(item, idx) in listaCursos" :key="item.id"
+                class="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
+                :class="idx < listaCursos.length - 1 ? 'border-b border-gray-200' : ''">
+                <span class="text-gray-900 text-sm">{{ item.name }}</span>
+                <div class="flex gap-2">
+                  <button @click="editandoCurso = item.id; nombreCurso = item.name"
+                    class="text-gray-500 hover:text-gray-900 text-xs px-2 py-1 rounded hover:bg-gray-100 transition-colors">Editar</button>
+                  <button @click="eliminarCurso(item.id)"
+                    class="text-gray-500 hover:text-red-600 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors">Eliminar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+</template>
