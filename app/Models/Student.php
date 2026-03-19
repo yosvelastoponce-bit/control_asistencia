@@ -54,4 +54,9 @@ class Student extends Model
     {
         return $this->hasMany(Attendance::class, 'student_id');
     }
+
+    public function generalAttendances(): HasMany
+    {
+        return $this->hasMany(GeneralAttendance::class, 'student_id');
+    }
 }

@@ -12,18 +12,19 @@ use App\Http\Controllers\Director\SeccionController;
 use App\Http\Controllers\Director\CursoController;
 use App\Http\Controllers\Director\EstudianteImportController;
 use App\Http\Controllers\Director\HorarioController;
+use App\Http\Controllers\GeneralAttendanceController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+// Route::get('/', function () {
+//     return Inertia::render('Welcome', [
+//         'canLogin' => Route::has('login'),
+//         'canRegister' => Route::has('register'),
+//         'laravelVersion' => Application::VERSION,
+//         'phpVersion' => PHP_VERSION,
+//     ]);
+// });
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
@@ -38,6 +39,18 @@ Route::middleware('auth')->group(function () {
 Route::get('/Index', function(){
     return Inertia::render('Profesor/Index');
 })->name('index_profesor');
+
+Route::get('/', [GeneralAttendanceController::class, 'index'])->name('home');
+Route::post('/attendance/general/scan', [GeneralAttendanceController::class, 'scan'])
+     ->name('attendance.general.scan');
+
+// Redirigir si alguien entra por GET directamente
+Route::get('/attendance/general/scan', fn() => redirect()->route('home'))
+     ->name('attendance.general.scan.get');
+
+Route::post('/attendance/general/scan', [GeneralAttendanceController::class, 'scan'])
+     ->name('attendance.general.scan');
+
 
 // Rutas del profesor
 Route::get('/profesor/login', [ProfesorLoginController::class, 'showLogin'])->name('profesor.login');
