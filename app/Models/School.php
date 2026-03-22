@@ -13,6 +13,7 @@ class School extends Model
         'name',
         'code',
         'address',
+        'google_sheet_id',
     ];
 
     protected $casts = [

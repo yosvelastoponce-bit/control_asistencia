@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('code')->unique();
             $table->string('address')->nullable();
+            $table->string('google_sheet_id')->nullable();
             $table->timestamp('created_at')->useCurrent()->nullable();
         });
     }

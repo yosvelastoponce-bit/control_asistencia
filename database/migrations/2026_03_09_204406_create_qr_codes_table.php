@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('qr_codes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_id')->unique()->constrained('students')->cascadeOnDelete();
-            $table->uuid('uuid')->unique()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('uuid')->unique();
             $table->boolean('active')->default(true);
             $table->timestamp('created_at')->useCurrent()->nullable();
         });

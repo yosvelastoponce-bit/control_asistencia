@@ -63,7 +63,6 @@ class GeneralAttendanceController extends Controller
         // 3. Determinar estado
         $status = $timeNow <= self::HORA_LIMITE ? 'on_time' : 'late';
 
-        // 4. Guardar en base de datos
         GeneralAttendance::create([
             'student_id' => $student->id,
             'school_id'  => $student->school_id,
@@ -73,18 +72,21 @@ class GeneralAttendanceController extends Controller
             'status'     => $status,
         ]);
 
-        // 5. Sincronizar con Google Sheets (no bloquea si falla)
+        // Sincronizar con el Google Sheet del colegio
         try {
-            $this->appendToGoogleSheets([
-                $today,
-                $now->format('H:i'),
-                $student->name,
-                $student->dni ?? '—',
-                $student->grade?->name  ?? '—',
-                $student->section?->name ?? '—',
-                $student->school?->name  ?? '—',
-                $status === 'on_time' ? 'A tiempo' : 'Tardanza',
-            ]);
+            $sheetId = $student->school->google_sheet_id;
+
+            if ($sheetId) {
+                $this->appendToGoogleSheets($sheetId, [
+                    $today,
+                    $now->format('H:i'),
+                    $student->name,
+                    $student->dni ?? '—',
+                    $student->grade?->name  ?? '—',
+                    $student->section?->name ?? '—',
+                    $status === 'on_time' ? 'A tiempo' : 'Tardanza',
+                ]);
+            }
         } catch (\Exception $e) {
             \Log::warning('Google Sheets sync failed: ' . $e->getMessage());
         }
@@ -102,12 +104,12 @@ class GeneralAttendanceController extends Controller
         ]);
     }
 
-    private function appendToGoogleSheets(array $row): void
+    private function appendToGoogleSheets(string $spreadsheetId, array $row): void
     {
         $credentialsPath = storage_path('app/google-credentials.json');
 
         if (!file_exists($credentialsPath)) {
-            throw new \Exception('Credenciales no encontradas en storage/app/google-credentials.json');
+            throw new \Exception('Credenciales no encontradas.');
         }
 
         $client = new GoogleClient();
@@ -115,11 +117,8 @@ class GeneralAttendanceController extends Controller
         $client->addScope(Sheets::SPREADSHEETS);
 
         $service = new Sheets($client);
-
-        $spreadsheetId = config('services.google_sheets.spreadsheet_id');
-        $range         = config('services.google_sheets.range', 'Asistencia!A:H');
-
-        $body = new ValueRange(['values' => [$row]]);
+        $range   = 'Asistencia!A:G';
+        $body    = new ValueRange(['values' => [$row]]);
 
         $service->spreadsheets_values->append(
             $spreadsheetId,

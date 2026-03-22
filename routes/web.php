@@ -13,6 +13,7 @@ use App\Http\Controllers\Director\CursoController;
 use App\Http\Controllers\Director\EstudianteImportController;
 use App\Http\Controllers\Director\HorarioController;
 use App\Http\Controllers\GeneralAttendanceController;
+use App\Http\Controllers\Director\GoogleSheetController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -96,6 +97,8 @@ Route::middleware('auth:app_user')->group(function () {
 
     Route::post('/director/estudiantes',        [EstudianteController::class, 'store'])->name('director.estudiantes.store');
     Route::delete('/director/estudiantes/{id}', [EstudianteController::class, 'destroy'])->name('director.estudiantes.destroy');
+
+    Route::post('/director/google-sheet', [GoogleSheetController::class, 'update'])->name('director.google-sheet.update');
 });
 
 // Route::resource('curso', CursoController::class);
