@@ -53,12 +53,17 @@ const onScanSuccess = async (decodedText) => {
             student: data.student ?? 'Desconocido',
         };
 
+        // ── Sonido ──
+        if (data.success) playSound('success')
+        else playSound('warning')
+
         historial.value.unshift({
             ...resultado.value,
             hora: new Date().toLocaleTimeString(),
         });
 
     } catch (err) {
+        playSound('error')
         const msg = err.response?.data?.message ?? err.message;
         resultado.value = {
             uuid:    decodedText,

@@ -99,6 +99,9 @@ Route::middleware('auth:app_user')->group(function () {
     Route::delete('/director/estudiantes/{id}', [EstudianteController::class, 'destroy'])->name('director.estudiantes.destroy');
 
     Route::post('/director/google-sheet', [GoogleSheetController::class, 'update'])->name('director.google-sheet.update');
+
+    Route::post('/director/entry-schedule', [GoogleSheetController::class, 'updateSchedule'])->name('director.entry-schedule.update');
+    Route::get('/director/entry-schedule', fn() => redirect()->route('director.dashboard'))->name('director.entry-schedule.get');
 });
 
 // Route::resource('curso', CursoController::class);

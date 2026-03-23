@@ -16,34 +16,45 @@ use Illuminate\Support\Facades\Auth;
 class ProfesorLoginController extends Controller
 {
     //
-    public function index( ){
-        // Obtener el teacher del usuario logueado
-        $teacher = Teacher::where('user_id', Auth::guard('app_user')->id())->first();
-
-        // Horarios del profesor con sus relaciones
+    public function index()
+    {
+        $user    = Auth::guard('app_user')->user();
+        $teacher = Teacher::where('user_id', $user->id)->first();
+     
+        // Si el usuario no tiene registro de teacher, redirigir con error
+        if (!$teacher) {
+            Auth::guard('app_user')->logout();
+            return redirect()->route('profesor.login')
+                ->withErrors(['email' => 'Este usuario no tiene un perfil de profesor asignado.']);
+        }
+     
         $horarios = Schedule::where('teacher_id', $teacher->id)
             ->with(['subject', 'section', 'grade'])
             ->orderBy('day')
             ->orderBy('start_time')
             ->get()
             ->map(function ($h) {
-                $dias = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'];
+                $dias = [
+                    1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles',
+                    4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'
+                ];
                 return [
-                    'id'          => $h->id,
-                    'dia'         => $dias[$h->day],
-                    'start_time'  => $h->start_time,
-                    'end_time'    => $h->end_time,
-                    'subject'     => $h->subject->name,
-                    'section'     => $h->section->name,
-                    'grade'       => $h->grade->name,
+                    'id'         => $h->id,
+                    'dia'        => $dias[$h->day],
+                    'start_time' => $h->start_time,
+                    'end_time'   => $h->end_time,
+                    'subject'    => $h->subject->name,
+                    'section'    => $h->section->name,
+                    'grade'      => $h->grade->name,
                 ];
             });
-        return Inertia::render('Profesor/Index',[
+     
+        return Inertia::render('Profesor/Index', [
             'profesores' => Teacher::all(),
             'cursos'     => Subject::all(),
             'horarios'   => $horarios,
             'auth'       => [
-                'user'   => Auth::guard('app_user')->user(),
+                'user' => $user,
             ],
         ]);
     }

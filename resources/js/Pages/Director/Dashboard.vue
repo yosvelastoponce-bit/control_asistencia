@@ -257,6 +257,46 @@ const guardarGoogleSheet = async () => {
     loadingSheet.value = false
   }
 }
+
+
+const entryStart        = ref(props.school?.entry_start?.slice(0, 5) ?? '07:00')
+const entryLimit        = ref(props.school?.entry_limit?.slice(0, 5) ?? '08:00')
+const entryEnd          = ref(props.school?.entry_end?.slice(0, 5)   ?? '09:00')
+const loadingSchedule   = ref(false)
+const successSchedule   = ref('')
+const errorSchedule     = ref('')
+
+const guardarHorarioEntrada = async () => {
+  errorSchedule.value   = ''
+  successSchedule.value = ''
+ 
+  if (!entryStart.value) { errorSchedule.value = 'La hora de inicio es obligatoria.'; return }
+  if (!entryLimit.value) { errorSchedule.value = 'La hora límite es obligatoria.'; return }
+  if (!entryEnd.value)   { errorSchedule.value = 'La hora de cierre es obligatoria.'; return }
+  if (entryLimit.value <= entryStart.value) {
+    errorSchedule.value = 'La hora límite debe ser posterior a la hora de inicio.'
+    return
+  }
+  if (entryEnd.value <= entryLimit.value) {
+    errorSchedule.value = 'La hora de cierre debe ser posterior a la hora límite.'
+    return
+  }
+ 
+  loadingSchedule.value = true
+  try {
+    await axios.post(route('director.entry-schedule.update'), {
+      entry_start: entryStart.value,
+      entry_limit: entryLimit.value,
+      entry_end:   entryEnd.value,
+    })
+    successSchedule.value = 'Horario de entrada actualizado correctamente.'
+  } catch (err) {
+    errorSchedule.value = err.response?.data?.message ?? 'Error al guardar.'
+  } finally {
+    loadingSchedule.value = false
+  }
+}
+
 </script>
 
 <template>
@@ -703,6 +743,91 @@ const guardarGoogleSheet = async () => {
                     {{ loadingSheet ? 'Guardando...' : 'Guardar configuración' }}
                   </button>
                 </div>
+              </div>
+            </div>
+
+            <!-- Horario de entrada -->
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mt-5">
+              <div class="flex items-start gap-3 mb-4">
+                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-gray-900 font-semibold text-sm">Horario de entrada</h3>
+                  <p class="text-gray-500 text-xs mt-0.5">
+                    Define el rango horario en que los estudiantes pueden registrar su entrada.
+                  </p>
+                </div>
+              </div>
+             
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+             
+                <!-- Hora de inicio -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">
+                    Inicio de registro *
+                  </label>
+                  <input v-model="entryStart" type="time"
+                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                  <p class="text-gray-400 text-xs mt-1">Desde cuándo se acepta el QR</p>
+                </div>
+             
+                <!-- Hora límite (puntualidad) -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">
+                    Límite de puntualidad *
+                  </label>
+                  <input v-model="entryLimit" type="time"
+                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                  <p class="text-gray-400 text-xs mt-1">Después = tardanza</p>
+                </div>
+             
+                <!-- Hora de cierre -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">
+                    Cierre de registro *
+                  </label>
+                  <input v-model="entryEnd" type="time"
+                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                  <p class="text-gray-400 text-xs mt-1">Después no se registra</p>
+                </div>
+             
+              </div>
+             
+              <!-- Resumen visual -->
+              <div class="bg-white border border-gray-200 rounded-lg p-3 mb-4 flex items-center gap-2 text-xs text-gray-600 flex-wrap">
+                <span class="font-medium text-green-700">{{ entryStart }}</span>
+                <span class="text-gray-300">→</span>
+                <span class="text-gray-500">A tiempo</span>
+                <span class="text-gray-300">→</span>
+                <span class="font-medium text-yellow-600">{{ entryLimit }}</span>
+                <span class="text-gray-300">→</span>
+                <span class="text-gray-500">Tardanza</span>
+                <span class="text-gray-300">→</span>
+                <span class="font-medium text-red-600">{{ entryEnd }}</span>
+                <span class="text-gray-300">→</span>
+                <span class="text-gray-500">Sin registro</span>
+              </div>
+             
+              <p v-if="errorSchedule" class="text-red-600 text-xs bg-red-50 border border-red-200 px-3 py-2 rounded-lg mb-3">
+                {{ errorSchedule }}
+              </p>
+              <div v-if="successSchedule" class="text-green-700 text-xs bg-green-50 border border-green-200 px-3 py-2 rounded-lg mb-3">
+                ✓ {{ successSchedule }}
+              </div>
+             
+              <div class="flex justify-end">
+                <button @click="guardarHorarioEntrada" :disabled="loadingSchedule"
+                  class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
+                  <svg v-if="loadingSchedule" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  {{ loadingSchedule ? 'Guardando...' : 'Guardar horario' }}
+                </button>
               </div>
             </div>
 

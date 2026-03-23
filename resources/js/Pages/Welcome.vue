@@ -13,33 +13,95 @@ const fechaHoy = new Date().toLocaleDateString('es-PE', {
   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
 })
 
+// const iniciarScanner = async () => {
+//   errorCamera.value   = ''
+//   scannerActivo.value = true
+//   resultado.value     = null
+
+//   // Esperar a que el div #qr-video esté en el DOM
+//   await nextTick()
+
+//   try {
+//     qrScanner = new Html5Qrcode('qr-video')
+
+//     const cameras = await Html5Qrcode.getCameras()
+//     if (!cameras || cameras.length === 0) {
+//       errorCamera.value   = 'No se encontró ninguna cámara.'
+//       scannerActivo.value = false
+//       return
+//     }
+
+//     // Preferir cámara trasera si existe
+//     const camId = cameras.find(c => /back|rear|environment/i.test(c.label))?.id
+//                   ?? cameras[cameras.length - 1].id
+
+//     await qrScanner.start(
+//       camId,
+//       { fps: 10, qrbox: { width: 250, height: 250 } },
+//       onScanSuccess,
+//       () => {}   // ignorar errores de frame
+//     )
+//   } catch (err) {
+//     errorCamera.value   = 'No se pudo acceder a la cámara: ' + err
+//     scannerActivo.value = false
+//     qrScanner           = null
+//   }
+// }
+// Reemplaza todo el bloque iniciarScanner por esto:
+
+
+// ── SONIDOS ──────────────────────────────────────────────────────────────────
+const playSound = (type) => {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)()
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+
+  osc.connect(gain)
+  gain.connect(ctx.destination)
+
+  if (type === 'success') {
+    // Dos tonos ascendentes — entrada registrada correctamente
+    osc.frequency.setValueAtTime(880, ctx.currentTime)
+    osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1)
+    gain.gain.setValueAtTime(0.3, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.3)
+
+  } else if (type === 'warning') {
+    // Tono medio sostenido — ya registrado
+    osc.frequency.setValueAtTime(440, ctx.currentTime)
+    gain.gain.setValueAtTime(0.3, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.4)
+
+  } else if (type === 'error') {
+    // Tono bajo descendente — QR inválido o error
+    osc.frequency.setValueAtTime(300, ctx.currentTime)
+    osc.frequency.setValueAtTime(150, ctx.currentTime + 0.15)
+    gain.gain.setValueAtTime(0.3, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.4)
+  }
+}
+
+
+
 const iniciarScanner = async () => {
   errorCamera.value   = ''
   scannerActivo.value = true
   resultado.value     = null
-
-  // Esperar a que el div #qr-video esté en el DOM
   await nextTick()
 
   try {
     qrScanner = new Html5Qrcode('qr-video')
-
-    const cameras = await Html5Qrcode.getCameras()
-    if (!cameras || cameras.length === 0) {
-      errorCamera.value   = 'No se encontró ninguna cámara.'
-      scannerActivo.value = false
-      return
-    }
-
-    // Preferir cámara trasera si existe
-    const camId = cameras.find(c => /back|rear|environment/i.test(c.label))?.id
-                  ?? cameras[cameras.length - 1].id
-
     await qrScanner.start(
-      camId,
+      { facingMode: 'environment' },  // ← igual que el profesor
       { fps: 10, qrbox: { width: 250, height: 250 } },
       onScanSuccess,
-      () => {}   // ignorar errores de frame
+      () => {}
     )
   } catch (err) {
     errorCamera.value   = 'No se pudo acceder a la cámara: ' + err
@@ -67,6 +129,12 @@ const onScanSuccess = async (uuid) => {
   try {
     const { data } = await axios.post(route('attendance.general.scan'), { uuid })
     resultado.value = { uuid, ...data }
+
+    // ── Sonido según resultado ──
+    if (data.success && data.status === 'on_time') playSound('success')
+    else if (data.success && data.status === 'late') playSound('success')
+    else playSound('warning')  // ya registrado
+
     if (data.student) {
       historial.value.unshift({
         ...data,
@@ -74,6 +142,7 @@ const onScanSuccess = async (uuid) => {
       })
     }
   } catch (err) {
+    playSound('error')  // QR inválido o error de servidor
     resultado.value = {
       uuid,
       success: false,

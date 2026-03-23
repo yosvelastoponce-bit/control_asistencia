@@ -13,8 +13,6 @@ use Google\Service\Sheets\ValueRange;
 
 class GeneralAttendanceController extends Controller
 {
-    private const HORA_LIMITE = '08:00:00';
-
     public function index()
     {
         return Inertia::render('Welcome', [
@@ -42,11 +40,36 @@ class GeneralAttendanceController extends Controller
         }
 
         $student = $qrCode->student;
+        $school  = $student->school;
         $now     = Carbon::now();
         $today   = $now->toDateString();
         $timeNow = $now->format('H:i:s');
 
-        // 2. Verificar si ya registró hoy
+        // Obtener horarios configurados del colegio (con valores por defecto)
+        $entryStart = $school->entry_start ?? '07:00:00';
+        $entryLimit = $school->entry_limit ?? '08:00:00';
+        $entryEnd   = $school->entry_end   ?? '09:00:00';
+
+        // Verificar si está dentro del horario de registro
+        if ($timeNow < $entryStart) {
+            return response()->json([
+                'success' => false,
+                'message' => "⏰ El registro de entrada aún no ha comenzado. Inicia a las " . substr($entryStart, 0, 5) . ".",
+                'student' => $student->name,
+                'status'  => 'too_early',
+            ]);
+        }
+
+        if ($timeNow > $entryEnd) {
+            return response()->json([
+                'success' => false,
+                'message' => "🚫 El tiempo de registro ya cerró a las " . substr($entryEnd, 0, 5) . ".",
+                'student' => $student->name,
+                'status'  => 'too_late',
+            ]);
+        }
+
+        // Verificar si ya registró hoy
         $yaRegistrado = GeneralAttendance::where('student_id', $student->id)
             ->where('date', $today)
             ->first();
@@ -56,12 +79,12 @@ class GeneralAttendanceController extends Controller
                 'success' => false,
                 'message' => "⚠️ {$student->name} ya registró entrada hoy a las {$yaRegistrado->time}.",
                 'student' => $student->name,
-                'status'  => $yaRegistrado->status,
+                'status'  => 'already_registered',
             ]);
         }
 
-        // 3. Determinar estado
-        $status = $timeNow <= self::HORA_LIMITE ? 'on_time' : 'late';
+        // Determinar si es puntual o tardanza
+        $status = $timeNow <= $entryLimit ? 'on_time' : 'late';
 
         GeneralAttendance::create([
             'student_id' => $student->id,
@@ -72,17 +95,16 @@ class GeneralAttendanceController extends Controller
             'status'     => $status,
         ]);
 
-        // Sincronizar con el Google Sheet del colegio
+        // Sincronizar con Google Sheets
         try {
-            $sheetId = $student->school->google_sheet_id;
-
+            $sheetId = $school->google_sheet_id;
             if ($sheetId) {
                 $this->appendToGoogleSheets($sheetId, [
                     $today,
                     $now->format('H:i'),
                     $student->name,
                     $student->dni ?? '—',
-                    $student->grade?->name  ?? '—',
+                    $student->grade?->name   ?? '—',
                     $student->section?->name ?? '—',
                     $status === 'on_time' ? 'A tiempo' : 'Tardanza',
                 ]);
@@ -117,8 +139,12 @@ class GeneralAttendanceController extends Controller
         $client->addScope(Sheets::SPREADSHEETS);
 
         $service = new Sheets($client);
-        $range   = 'Asistencia!A:G';
-        $body    = new ValueRange(['values' => [$row]]);
+
+        $spreadsheet = $service->spreadsheets->get($spreadsheetId);
+        $sheetTitle  = $spreadsheet->getSheets()[0]->getProperties()->getTitle();
+        $range       = $sheetTitle . '!A:G';
+
+        $body = new ValueRange(['values' => [$row]]);
 
         $service->spreadsheets_values->append(
             $spreadsheetId,

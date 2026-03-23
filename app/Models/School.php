@@ -14,6 +14,9 @@ class School extends Model
         'code',
         'address',
         'google_sheet_id',
+        'entry_start', 
+        'entry_limit', 
+        'entry_end',
     ];
 
     protected $casts = [
