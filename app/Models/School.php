@@ -17,6 +17,7 @@ class School extends Model
         'entry_start', 
         'entry_limit', 
         'entry_end',
+        'logo_path'
     ];
 
     protected $casts = [

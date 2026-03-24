@@ -67,7 +67,6 @@
                             alt="QR {{ $student['name'] }}"
                         />
                         <div class="student-name">{{ $student['name'] }}</div>
-                        <div class="student-uuid">{{ $student['uuid'] }}</div>
                     </div>
                 @endforeach
 

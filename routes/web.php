@@ -14,6 +14,7 @@ use App\Http\Controllers\Director\EstudianteImportController;
 use App\Http\Controllers\Director\HorarioController;
 use App\Http\Controllers\GeneralAttendanceController;
 use App\Http\Controllers\Director\GoogleSheetController;
+use App\Http\Controllers\Director\SchoolLogoController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -102,6 +103,10 @@ Route::middleware('auth:app_user')->group(function () {
 
     Route::post('/director/entry-schedule', [GoogleSheetController::class, 'updateSchedule'])->name('director.entry-schedule.update');
     Route::get('/director/entry-schedule', fn() => redirect()->route('director.dashboard'))->name('director.entry-schedule.get');
+
+    //Logo
+    Route::post('/director/logo', [SchoolLogoController::class, 'upload'])->name('director.logo.upload');
+    Route::delete('/director/logo', [SchoolLogoController::class, 'destroy'])->name('director.logo.destroy');
 });
 
 // Route::resource('curso', CursoController::class);

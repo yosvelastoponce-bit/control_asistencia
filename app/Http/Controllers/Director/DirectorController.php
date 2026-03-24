@@ -4,11 +4,16 @@ namespace App\Http\Controllers\Director;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppUser;
+use App\Models\Grade;
 use App\Models\School;
+use App\Models\Student;
+use App\Models\Subject;
+use App\Models\Teacher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class DirectorController extends Controller
@@ -117,20 +122,48 @@ class DirectorController extends Controller
             return redirect()->route('director.login');
         }
 
-        $school = School::find($user->school_id);
+        $school   = School::find($user->school_id);
+        $schoolId = $school->id;
 
-        // Cargar stats del colegio
         $stats = [
-            'profesores'  => \App\Models\Teacher::where('school_id', $school->id)->count(),
-            'estudiantes' => \App\Models\Student::where('school_id', $school->id)->count(),
-            'cursos'      => \App\Models\Subject::where('school_id', $school->id)->count(),
-            'grados'      => \App\Models\Grade::where('school_id', $school->id)->count(),
+            'profesores'  => Teacher::where('school_id', $schoolId)->count(),
+            'estudiantes' => Student::where('school_id', $schoolId)->count(),
+            'cursos'      => Subject::where('school_id', $schoolId)->count(),
+            'grados'      => Grade::where('school_id', $schoolId)->count(),
         ];
 
+        // Profesores con su usuario
+        $profesores = Teacher::where('school_id', $schoolId)
+            ->with('appUser')
+            ->get();
+
+        // Cursos del colegio
+        $cursos = Subject::where('school_id', $schoolId)->get();
+
+        // Estudiantes con grado, sección y QR
+        $estudiantes = Student::where('school_id', $schoolId)
+            ->with(['grade', 'section', 'qrCode'])
+            ->orderBy('name')
+            ->get();
+
+        // Grados con sus secciones para el filtro
+        $grados = Grade::where('school_id', $schoolId)
+            ->with('sections')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Director/Dashboard', [
-            'director' => $user,
-            'school'   => $school,
-            'stats'    => $stats,
+            'director'    => $user,
+            'school' => array_merge($school->toArray(), [
+                'logo_url' => $school->logo_path
+                    ? Storage::url($school->logo_path)
+                    : null,
+            ]),
+            'stats'       => $stats,
+            'profesores'  => $profesores,
+            'cursos'      => $cursos,
+            'estudiantes' => $estudiantes,
+            'grados'      => $grados,
         ]);
     }
 }

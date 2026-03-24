@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
 
@@ -23,6 +23,7 @@ const navItems = [
   { id: 'estudiantes',   label: 'Estudiantes' },
   { id: 'cursos',        label: 'Cursos' },
   { id: 'configuracion', label: 'Configuración' },
+  { id: 'reportes', label: 'Reportes' },
 ]
 
 const currentSectionLabel = computed(
@@ -297,6 +298,100 @@ const guardarHorarioEntrada = async () => {
   }
 }
 
+
+// ── REPORTES ──────────────────────────────────────────────────────────────────
+const busquedaEstudiante  = ref('')
+const gradoFiltro         = ref(null)   // id del grado seleccionado
+const seccionFiltro       = ref(null)   // id de la sección seleccionada
+ 
+// Secciones disponibles según el grado seleccionado
+const seccionesFiltro = computed(() => {
+  if (!gradoFiltro.value) return []
+  const grado = props.grados.find(g => g.id === gradoFiltro.value)
+  return grado?.sections ?? []
+})
+ 
+// Lista filtrada de estudiantes
+const estudiantesFiltrados = computed(() => {
+  let lista = [...props.estudiantes]
+ 
+  // Filtro por búsqueda (nombre o DNI)
+  if (busquedaEstudiante.value.trim()) {
+    const q = busquedaEstudiante.value.toLowerCase()
+    lista = lista.filter(e =>
+      e.name.toLowerCase().includes(q) ||
+      (e.dni ?? '').toLowerCase().includes(q)
+    )
+  }
+ 
+  // Filtro por grado
+  if (gradoFiltro.value) {
+    lista = lista.filter(e => e.grade?.id === gradoFiltro.value)
+  }
+ 
+  // Filtro por sección
+  if (seccionFiltro.value) {
+    lista = lista.filter(e => e.section?.id === seccionFiltro.value)
+  }
+ 
+  return lista
+})
+ 
+const limpiarFiltros = () => {
+  busquedaEstudiante.value = ''
+  gradoFiltro.value        = null
+  seccionFiltro.value      = null
+}
+ 
+// Al cambiar grado, resetear sección
+watch(gradoFiltro, () => { seccionFiltro.value = null })
+
+
+
+// ── LOGO DEL COLEGIO ──────────────────────────────────────────────────────────
+const logoUrl         = ref(props.school?.logo_url ?? null)  // URL pública del logo
+const loadingLogo     = ref(false)
+const successLogo     = ref('')
+const errorLogo       = ref('')
+const inputLogo       = ref(null)  // ref al input file
+ 
+const onLogoChange = async (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+ 
+  errorLogo.value   = ''
+  successLogo.value = ''
+  loadingLogo.value = true
+ 
+  const formData = new FormData()
+  formData.append('logo', file)
+ 
+  try {
+    const { data } = await axios.post(route('director.logo.upload'), formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    logoUrl.value     = data.logo_url
+    successLogo.value = 'Logo actualizado correctamente.'
+  } catch (err) {
+    errorLogo.value = err.response?.data?.message
+                   ?? err.response?.data?.errors?.logo?.[0]
+                   ?? 'Error al subir el logo.'
+  } finally {
+    loadingLogo.value = false
+    if (inputLogo.value) inputLogo.value.value = ''
+  }
+}
+ 
+const eliminarLogo = async () => {
+  if (!confirm('¿Eliminar el logo del colegio?')) return
+  try {
+    await axios.delete(route('director.logo.destroy'))
+    logoUrl.value     = null
+    successLogo.value = 'Logo eliminado.'
+  } catch (err) {
+    errorLogo.value = 'No se pudo eliminar el logo.'
+  }
+}
 </script>
 
 <template>
@@ -307,10 +402,19 @@ const guardarHorarioEntrada = async () => {
       class="fixed left-0 top-0 h-full w-60 bg-gray-100 border-r border-gray-200 flex flex-col z-40 transition-transform duration-300"
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
     >
-      <div class="p-5 border-b border-gray-200">
+      <!-- <div class="p-5 border-b border-gray-200">
         <p class="font-bold text-sm truncate">{{ school?.name }}</p>
         <p class="text-gray-500 text-xs mt-0.5">Cód: {{ school?.code }}</p>
+      </div> -->
+      <div class="p-5 border-b border-gray-200">
+        <!-- Logo del colegio (si existe) -->
+        <div v-if="logoUrl" class="mb-3 flex justify-center">
+          <img :src="logoUrl" alt="Logo" class="w-14 h-14 object-contain rounded-lg border border-gray-200"/>
+        </div>
+        <p class="font-bold text-sm truncate text-center">{{ school?.name }}</p>
+        <p class="text-gray-500 text-xs mt-0.5 text-center">Cód: {{ school?.code }}</p>
       </div>
+
       <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto">
         <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider px-3 pt-3 pb-2">Menú</p>
         <button v-for="item in navItems" :key="item.id"
@@ -373,6 +477,7 @@ const guardarHorarioEntrada = async () => {
 
         <!-- ── PROFESORES ── -->
         <section v-else-if="activeSection === 'profesores'">
+          <!-- <pre>{{ listaProfesores[0] }}</pre> -->
           <div class="flex items-center justify-between mb-5">
             <p class="text-gray-500 text-sm">Profesores de tu institución.</p>
             <button @click="mostrarFormProfesor = !mostrarFormProfesor"
@@ -430,8 +535,8 @@ const guardarHorarioEntrada = async () => {
                   <td colspan="4" class="px-5 py-8 text-center text-gray-400">Sin profesores registrados.</td>
                 </tr>
                 <tr v-for="p in listaProfesores" :key="p.id" class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                  <td class="px-5 py-3 text-gray-900">{{ p.appUser?.name ?? p.name }}</td>
-                  <td class="px-5 py-3 text-gray-500">{{ p.appUser?.email ?? p.email ?? '—' }}</td>
+                  <td class="px-5 py-3 text-gray-900">{{ p.app_user?.name ?? p.name }}</td>
+                  <td class="px-5 py-3 text-gray-500">{{ p.app_user?.email ?? p.email ?? '—' }}</td>
                   <td class="px-5 py-3 text-gray-500">{{ p.specialty ?? '—' }}</td>
                   <td class="px-5 py-3 text-right">
                     <button @click="eliminarProfesor(p.id)" class="text-red-600 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors">Eliminar</button>
@@ -622,6 +727,116 @@ const guardarHorarioEntrada = async () => {
           </div>
         </section>
 
+        <!-- ── REPORTES ── -->
+        <section v-else-if="activeSection === 'reportes'">
+         
+          <!-- Filtros -->
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-5">
+            <h3 class="text-gray-900 font-semibold text-sm mb-4">Filtros</h3>
+         
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+         
+              <!-- Búsqueda -->
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Buscar por nombre o DNI</label>
+                <div class="relative">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                  <input v-model="busquedaEstudiante" type="text" placeholder="Ej: García, 12345678..."
+                    class="w-full bg-white border border-gray-300 rounded-lg pl-9 pr-3 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                </div>
+              </div>
+         
+              <!-- Grado -->
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Grado</label>
+                <select v-model="gradoFiltro"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800">
+                  <option :value="null">Todos los grados</option>
+                  <option v-for="g in grados" :key="g.id" :value="g.id">{{ g.name }}</option>
+                </select>
+              </div>
+         
+              <!-- Sección -->
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Sección</label>
+                <select v-model="seccionFiltro" :disabled="!gradoFiltro"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <option :value="null">Todas las secciones</option>
+                  <option v-for="s in seccionesFiltro" :key="s.id" :value="s.id">{{ s.name }}</option>
+                </select>
+              </div>
+         
+            </div>
+         
+            <!-- Resumen y limpiar -->
+            <div class="mt-4 flex items-center justify-between">
+              <p class="text-gray-500 text-xs">
+                Mostrando <span class="font-semibold text-gray-900">{{ estudiantesFiltrados.length }}</span>
+                de <span class="font-semibold text-gray-900">{{ estudiantes.length }}</span> estudiantes
+              </p>
+              <button v-if="busquedaEstudiante || gradoFiltro || seccionFiltro"
+                @click="limpiarFiltros"
+                class="text-gray-500 hover:text-gray-900 text-xs px-3 py-1.5 rounded-lg border border-gray-300 hover:border-gray-500 transition-colors">
+                Limpiar filtros
+              </button>
+            </div>
+          </div>
+         
+          <!-- Tabla de resultados -->
+          <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div class="px-5 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <h3 class="text-gray-900 font-semibold text-sm">
+                {{ gradoFiltro
+                  ? (seccionFiltro
+                    ? grados.find(g => g.id === gradoFiltro)?.name + ' — Sección ' + seccionesFiltro.find(s => s.id === seccionFiltro)?.name
+                    : grados.find(g => g.id === gradoFiltro)?.name)
+                  : 'Todos los estudiantes' }}
+              </h3>
+              <span class="text-gray-400 text-xs">{{ estudiantesFiltrados.length }} estudiantes</span>
+            </div>
+         
+            <table class="w-full text-sm">
+              <thead class="border-b border-gray-200 bg-gray-50">
+                <tr>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">#</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">Nombre</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">DNI</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">Grado</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">Sección</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">QR</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="!estudiantesFiltrados.length">
+                  <td colspan="6" class="px-5 py-10 text-center text-gray-400">
+                    {{ busquedaEstudiante || gradoFiltro
+                      ? 'No se encontraron estudiantes con esos filtros.'
+                      : 'Sin estudiantes registrados.' }}
+                  </td>
+                </tr>
+                <tr v-for="(e, idx) in estudiantesFiltrados" :key="e.id"
+                  class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                  <td class="px-5 py-3 text-gray-400 text-xs">{{ idx + 1 }}</td>
+                  <td class="px-5 py-3 text-gray-900 font-medium">{{ e.name }}</td>
+                  <td class="px-5 py-3 text-gray-500 font-mono text-xs">{{ e.dni ?? '—' }}</td>
+                  <td class="px-5 py-3 text-gray-500">{{ e.grade?.name ?? '—' }}</td>
+                  <td class="px-5 py-3 text-gray-500">{{ e.section?.name ?? '—' }}</td>
+                  <td class="px-5 py-3">
+                    <span v-if="e.qr_code?.active"
+                      class="inline-flex items-center bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full border border-green-300">
+                      ✓ Activo
+                    </span>
+                    <span v-else class="text-gray-400 text-xs">Sin QR</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+         
+        </section>
+
         <!-- ── CURSOS ── -->
         <section v-else-if="activeSection === 'cursos'">
           <div class="max-w-lg">
@@ -679,6 +894,57 @@ const guardarHorarioEntrada = async () => {
               </div>
             </div>
 
+            <!-- Logo del colegio -->
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-5">
+              <div class="flex items-start gap-3 mb-4">
+                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-gray-900 font-semibold text-sm">Logo de la institución</h3>
+                  <p class="text-gray-500 text-xs mt-0.5">
+                    Aparecerá en el sidebar y en el centro de los códigos QR generados.
+                  </p>
+                </div>
+              </div>
+ 
+              <!-- Preview del logo actual -->
+              <div v-if="logoUrl" class="mb-4 flex items-center gap-4">
+                <img :src="logoUrl" alt="Logo actual"
+                  class="w-16 h-16 object-contain rounded-xl border border-gray-200 bg-white p-1"/>
+                <div>
+                  <p class="text-gray-700 text-xs font-medium mb-1">Logo actual</p>
+                  <button @click="eliminarLogo"
+                    class="text-red-600 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors border border-red-200">
+                    Eliminar logo
+                  </button>
+                </div>
+              </div>
+ 
+              <!-- Zona de subida -->
+              <div
+                @click="inputLogo.click()"
+                class="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors hover:border-gray-500"
+                :class="logoUrl ? 'border-gray-200' : 'border-gray-300'">
+                <input ref="inputLogo" type="file" accept=".png,.jpg,.jpeg" class="hidden" @change="onLogoChange"/>
+                <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <p class="text-gray-500 text-sm">
+                  {{ logoUrl ? 'Haz clic para cambiar el logo' : 'Haz clic para subir el logo' }}
+                </p>
+                <p class="text-gray-400 text-xs mt-1">PNG o JPG · máx. 2MB</p>
+              </div>
+ 
+              <div v-if="loadingLogo" class="mt-3 text-gray-500 text-xs text-center animate-pulse">Subiendo logo...</div>
+              <p v-if="errorLogo" class="mt-3 text-red-600 text-xs bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{{ errorLogo }}</p>
+              <div v-if="successLogo" class="mt-3 text-green-700 text-xs bg-green-50 border border-green-200 px-3 py-2 rounded-lg">✓ {{ successLogo }}</div>
+            </div>
+            
             <!-- Google Sheets -->
             <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
               <div class="flex items-start gap-3 mb-4">
