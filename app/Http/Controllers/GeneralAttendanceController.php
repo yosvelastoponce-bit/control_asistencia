@@ -106,7 +106,7 @@ class GeneralAttendanceController extends Controller
                     $student->dni ?? '—',
                     $student->grade?->name   ?? '—',
                     $student->section?->name ?? '—',
-                    $status === 'on_time' ? 'A tiempo' : 'Tardanza',
+                    $status === 'on_time' ? 'Presente' : 'Tarde',
                 ]);
             }
         } catch (\Exception $e) {
