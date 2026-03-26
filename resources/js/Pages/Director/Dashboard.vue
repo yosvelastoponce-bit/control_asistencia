@@ -392,6 +392,30 @@ const eliminarLogo = async () => {
     errorLogo.value = 'No se pudo eliminar el logo.'
   }
 }
+
+
+
+// ── PROCESAR AUSENCIAS ────────────────────────────────────────────────────────
+const loadingAusencias  = ref(false)
+const resultAusencias   = ref(null)   // { success, message, absent_count }
+const errorAusencias    = ref('')
+ 
+const procesarAusencias = async (force = false) => {
+  errorAusencias.value  = ''
+  resultAusencias.value = null
+  loadingAusencias.value = true
+ 
+  try {
+    const { data } = await axios.post(route('director.process.absences'), { force })
+    resultAusencias.value = data
+  } catch (err) {
+    errorAusencias.value = err.response?.data?.message ?? 'Error al procesar ausencias.'
+  } finally {
+    loadingAusencias.value = false
+  }
+}
+
+
 </script>
 
 <template>
@@ -464,6 +488,56 @@ const eliminarLogo = async () => {
               <p class="text-gray-500 text-sm mt-1">{{ stat.label }}</p>
             </div>
           </div>
+
+          <!-- Panel de ausencias -->
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-8">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h3 class="text-gray-900 font-semibold text-sm">Registro de ausencias</h3>
+                <p class="text-gray-500 text-xs mt-1">
+                  Registra como ausentes a los estudiantes que no marcaron entrada hoy.
+                  Solo disponible después del cierre del horario de entrada
+                  <span class="font-medium text-gray-700">({{ school?.entry_end?.slice(0,5) ?? '09:00' }})</span>.
+                </p>
+              </div>
+              <div class="flex gap-2 flex-shrink-0">
+                <button
+                  @click="procesarAusencias(false)"
+                  :disabled="loadingAusencias"
+                  class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+                  <svg v-if="loadingAusencias" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  {{ loadingAusencias ? 'Procesando...' : 'Procesar ausencias' }}
+                </button>
+                <button
+                  @click="procesarAusencias(true)"
+                  :disabled="loadingAusencias"
+                  title="Forzar procesamiento aunque el horario no haya cerrado"
+                  class="text-gray-500 hover:text-gray-900 text-xs px-3 py-2 rounded-lg border border-gray-300 hover:border-gray-500 transition-colors">
+                  Forzar
+                </button>
+              </div>
+            </div>
+ 
+            <!-- Resultado -->
+            <div v-if="resultAusencias" class="mt-4 rounded-lg px-4 py-3 text-sm border"
+              :class="resultAusencias.success
+                ? 'bg-green-50 border-green-200 text-green-700'
+                : 'bg-yellow-50 border-yellow-200 text-yellow-700'">
+              <p class="font-medium">{{ resultAusencias.message }}</p>
+              <p v-if="resultAusencias.absent_count !== undefined" class="text-xs mt-1 opacity-75">
+                {{ resultAusencias.registered_count }} presentes ·
+                {{ resultAusencias.absent_count }} ausentes ·
+                {{ resultAusencias.total_students }} total
+              </p>
+            </div>
+            <p v-if="errorAusencias" class="mt-4 text-red-600 text-xs bg-red-50 border border-red-200 px-3 py-2 rounded-lg">
+              {{ errorAusencias }}
+            </p>
+          </div>
+          
           <h3 class="text-gray-700 font-semibold mb-4">Accesos rápidos</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <button v-for="item in navItems.filter(i => i.id !== 'inicio')" :key="item.id"

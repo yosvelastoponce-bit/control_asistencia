@@ -53,6 +53,15 @@ Route::get('/attendance/general/scan', fn() => redirect()->route('home'))
 Route::post('/attendance/general/scan', [GeneralAttendanceController::class, 'scan'])
      ->name('attendance.general.scan');
 
+// Rutas para el procesamiento de ausencias
+// Route::post('/attendance/process-absences', [GeneralAttendanceController::class, 'processAbsences'])
+//     ->name('attendance.process-absences');
+// Route::get('/attendance/statistics', [GeneralAttendanceController::class, 'getStatistics'])
+//     ->name('attendance.statistics');
+Route::post('/attendance/process-absences', [GeneralAttendanceController::class, 'processAbsences'])
+    ->name('attendance.process-absences');
+Route::get('/attendance/statistics', [GeneralAttendanceController::class, 'getStatistics'])
+    ->name('attendance.statistics');
 
 // Rutas del profesor
 Route::get('/profesor/login', [ProfesorLoginController::class, 'showLogin'])->name('profesor.login');
@@ -99,10 +108,16 @@ Route::middleware('auth:app_user')->group(function () {
     Route::post('/director/estudiantes',        [EstudianteController::class, 'store'])->name('director.estudiantes.store');
     Route::delete('/director/estudiantes/{id}', [EstudianteController::class, 'destroy'])->name('director.estudiantes.destroy');
 
+    // Google Sheets y configuración
     Route::post('/director/google-sheet', [GoogleSheetController::class, 'update'])->name('director.google-sheet.update');
 
     Route::post('/director/entry-schedule', [GoogleSheetController::class, 'updateSchedule'])->name('director.entry-schedule.update');
     Route::get('/director/entry-schedule', fn() => redirect()->route('director.dashboard'))->name('director.entry-schedule.get');
+
+    // Procesar ausencias manualmente desde el dashboard
+    Route::post('/director/process-absences', [GoogleSheetController::class, 'processAbsences'])->name('director.process.absences');
+    // Obtener estadísticas de asistencia
+    Route::get('/director/attendance-stats', [GoogleSheetController::class, 'getAttendanceStats'])->name('director.attendance.stats');
 
     //Logo
     Route::post('/director/logo', [SchoolLogoController::class, 'upload'])->name('director.logo.upload');

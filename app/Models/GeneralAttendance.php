@@ -36,4 +36,16 @@ class GeneralAttendance extends Model
     {
         return $this->belongsTo(QrCode::class, 'qr_code_id');
     }
+
+    // Scope para obtener registros de una fecha específica
+    public function scopeForDate($query, $date)
+    {
+        return $query->where('date', $date);
+    }
+
+    // Scope para obtener ausencias
+    public function scopeAbsent($query)
+    {
+        return $query->where('status', 'absent');
+    }
 }

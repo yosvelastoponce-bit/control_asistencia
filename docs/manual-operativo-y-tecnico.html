@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Manual Operativo y Tecnico</title>
+    <style>
+        @page {
+            margin: 28px 34px;
+        }
+
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            color: #1f2937;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        h1, h2, h3 {
+            margin: 0 0 8px;
+            color: #111827;
+        }
+
+        h1 {
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 16px;
+            border-bottom: 1px solid #d1d5db;
+            padding-bottom: 4px;
+            margin-top: 22px;
+        }
+
+        h3 {
+            font-size: 13px;
+            margin-top: 16px;
+        }
+
+        p {
+            margin: 0 0 8px;
+        }
+
+        ul, ol {
+            margin: 6px 0 10px 18px;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        .cover {
+            text-align: center;
+            margin-top: 120px;
+        }
+
+        .muted {
+            color: #4b5563;
+        }
+
+        .small {
+            font-size: 10px;
+        }
+
+        .box {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin: 10px 0 12px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0 12px;
+        }
+
+        .table th,
+        .table td {
+            border: 1px solid #d1d5db;
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+
+        .table th {
+            background: #f3f4f6;
+            text-align: left;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+
+        code {
+            font-family: DejaVu Sans Mono, monospace;
+            font-size: 10px;
+            background: #f3f4f6;
+            padding: 1px 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="cover">
+        <h1>Manual Operativo y Tecnico</h1>
+        <p><strong>Sistema de Control de Asistencia</strong></p>
+        <p class="muted">Version documentada a partir del estado actual del proyecto.</p>
+        <p class="small muted">Incluye manual del director y profesor, y documentacion tecnica del flujo de asistencia y Google Sheets.</p>
+    </div>
+
+    <div class="page-break"></div>
+
+    <h2>1. Objetivo del sistema</h2>
+    <p>El sistema permite registrar asistencias mediante codigos QR, administrar estudiantes, profesores, cursos y horarios, y sincronizar la asistencia general del ingreso con Google Sheets.</p>
+
+    <h2>2. Roles del sistema</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Rol</th>
+                <th>Responsabilidades principales</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Director</td>
+                <td>Configura el colegio, administra profesores, estudiantes y cursos, define el horario general de entrada, conecta Google Sheets, sube el logo institucional y procesa ausencias.</td>
+            </tr>
+            <tr>
+                <td>Profesor</td>
+                <td>Gestiona sus horarios de clase y registra asistencia por horario escaneando los codigos QR de estudiantes.</td>
+            </tr>
+            <tr>
+                <td>Estudiante</td>
+                <td>Cuenta con un codigo QR individual usado para registro de asistencia general y asistencia por horario.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>3. Manual del Director</h2>
+
+    <h3>3.1 Acceso al portal</h3>
+    <ol>
+        <li>Ingresar a la ruta <code>/director/login</code>.</li>
+        <li>Escribir el correo del director registrado.</li>
+        <li>Ingresar la contrasena.</li>
+        <li>Presionar el boton de inicio de sesion.</li>
+    </ol>
+
+    <div class="box">
+        <strong>Nota:</strong> el registro inicial del director crea tambien el colegio asociado. Cada director trabaja sobre un unico colegio vinculado a su usuario.
+    </div>
+
+    <h3>3.2 Vista general del dashboard</h3>
+    <p>El panel principal del director muestra un menu lateral con las siguientes secciones:</p>
+    <ul>
+        <li>Inicio</li>
+        <li>Profesores</li>
+        <li>Estudiantes</li>
+        <li>Cursos</li>
+        <li>Configuracion</li>
+        <li>Reportes</li>
+    </ul>
+
+    <p>En la parte superior del panel de inicio se muestran indicadores rapidos:</p>
+    <ul>
+        <li>Total de profesores</li>
+        <li>Total de estudiantes</li>
+        <li>Total de cursos</li>
+        <li>Total de grados</li>
+    </ul>
+
+    <h3>3.3 Gestion de profesores</h3>
+    <p>Desde la seccion <strong>Profesores</strong> el director puede registrar y eliminar profesores.</p>
+    <p>Datos solicitados al registrar:</p>
+    <ul>
+        <li>Nombre completo</li>
+        <li>Correo electronico</li>
+        <li>Contrasena</li>
+        <li>Especialidad</li>
+    </ul>
+    <p>El sistema crea automaticamente el usuario del profesor con rol <code>teacher</code> y su registro en la tabla de profesores.</p>
+
+    <h3>3.4 Gestion de estudiantes</h3>
+    <p>Desde la seccion <strong>Estudiantes</strong> el director puede registrar estudiantes de manera individual o mediante carga masiva CSV.</p>
+
+    <p>Registro individual:</p>
+    <ul>
+        <li>Nombre completo</li>
+        <li>DNI</li>
+        <li>Contrasena</li>
+        <li>Grado</li>
+        <li>Seccion</li>
+    </ul>
+
+    <p>Comportamiento del sistema:</p>
+    <ul>
+        <li>Si el grado no existe para el colegio, se crea automaticamente.</li>
+        <li>Si la seccion no existe para el grado, se crea automaticamente.</li>
+        <li>Se crea un usuario con rol <code>student</code>.</li>
+        <li>El estudiante puede luego recibir un QR cuando se descargan los codigos.</li>
+    </ul>
+
+    <p>Carga masiva CSV:</p>
+    <ul>
+        <li>El archivo aceptado es <code>.csv</code>.</li>
+        <li>Columnas esperadas: nombre, dni, contrasena, grado y seccion.</li>
+        <li>Los registros validos se importan y los errores se muestran al usuario.</li>
+    </ul>
+
+    <h3>3.5 Descarga de codigos QR</h3>
+    <p>En la tabla de estudiantes existe un enlace para descargar los codigos QR en PDF.</p>
+    <p>Durante esta descarga:</p>
+    <ul>
+        <li>El sistema revisa si cada estudiante ya tiene un QR.</li>
+        <li>Si no lo tiene, genera un UUID unico y activa su QR.</li>
+        <li>Se construye un PDF con el nombre del estudiante, el QR y los datos del colegio.</li>
+        <li>Si el colegio tiene logo, el logo se incrusta en el PDF.</li>
+    </ul>
+
+    <h3>3.6 Gestion de cursos</h3>
+    <p>Desde la seccion <strong>Cursos</strong> el director puede:</p>
+    <ul>
+        <li>Crear cursos</li>
+        <li>Editar cursos</li>
+        <li>Eliminar cursos</li>
+    </ul>
+
+    <h3>3.7 Configuracion del logo institucional</h3>
+    <p>En la seccion <strong>Configuracion</strong> el director puede subir o eliminar el logo del colegio.</p>
+    <ul>
+        <li>Formatos permitidos: PNG y JPG</li>
+        <li>Uso del logo: sidebar del sistema y PDF de codigos QR</li>
+    </ul>
+
+    <h3>3.8 Configuracion de Google Sheets</h3>
+    <p>El director puede vincular una hoja de Google para recibir los registros de asistencia general en tiempo real.</p>
+
+    <p>Pasos operativos:</p>
+    <ol>
+        <li>Crear o abrir una hoja en Google Sheets.</li>
+        <li>Copiar el ID del documento desde la URL.</li>
+        <li>Compartir la hoja con la cuenta de servicio del sistema con permiso de editor.</li>
+        <li>Pegar el ID en el campo de configuracion.</li>
+        <li>Guardar la configuracion.</li>
+    </ol>
+
+    <div class="box">
+        <strong>Importante:</strong> si la hoja no se comparte con la cuenta de servicio configurada en el proyecto, la escritura en Google Sheets fallara aunque la asistencia se guarde en la base de datos.
+    </div>
+
+    <h3>3.9 Configuracion del horario general de entrada</h3>
+    <p>El director define tres horas principales:</p>
+    <ul>
+        <li><strong>Inicio de registro:</strong> desde cuando se acepta el QR de ingreso general.</li>
+        <li><strong>Limite de puntualidad:</strong> despues de esta hora el estado cambia a tardanza.</li>
+        <li><strong>Cierre de registro:</strong> despues de esta hora ya no se permite marcar.</li>
+    </ul>
+
+    <p>Interpretacion operativa:</p>
+    <ul>
+        <li>Antes del inicio: el estudiante recibe mensaje de "aun no ha comenzado".</li>
+        <li>Entre inicio y limite: se registra como <code>on_time</code>.</li>
+        <li>Entre limite y cierre: se registra como <code>late</code>.</li>
+        <li>Despues del cierre: se rechaza el registro.</li>
+    </ul>
+
+    <h3>3.10 Procesamiento de ausencias</h3>
+    <p>En el panel de inicio existe un bloque para procesar ausencias del dia.</p>
+    <p>La funcion:</p>
+    <ul>
+        <li>Detecta que estudiantes no registraron entrada general.</li>
+        <li>Crea un registro con estado <code>absent</code>.</li>
+        <li>Puede sincronizar esas ausencias con Google Sheets.</li>
+        <li>Tiene opcion de forzar el proceso aunque no haya cerrado el horario.</li>
+    </ul>
+
+    <div class="box">
+        <strong>Recomendacion operativa:</strong> ejecutar el procesamiento de ausencias solo despues del cierre del horario general de entrada, salvo casos de mantenimiento o pruebas.
+    </div>
+
+    <h3>3.11 Reportes visibles</h3>
+    <p>La seccion <strong>Reportes</strong> permite filtrar estudiantes por:</p>
+    <ul>
+        <li>Nombre</li>
+        <li>DNI</li>
+        <li>Grado</li>
+        <li>Seccion</li>
+    </ul>
+    <p>La tabla muestra informacion general del estudiante y el estado de su QR.</p>
+
+    <div class="page-break"></div>
+
+    <h2>4. Manual del Profesor</h2>
+
+    <h3>4.1 Acceso al portal</h3>
+    <ol>
+        <li>Ingresar a la ruta <code>/profesor/login</code>.</li>
+        <li>Escribir el correo asignado por el director.</li>
+        <li>Ingresar la contrasena.</li>
+        <li>Entrar al panel del profesor.</li>
+    </ol>
+
+    <h3>4.2 Estructura del panel</h3>
+    <p>El panel del profesor tiene dos secciones principales:</p>
+    <ul>
+        <li><strong>Mis Horarios</strong></li>
+        <li><strong>Asistencia</strong></li>
+    </ul>
+
+    <h3>4.3 Registro de horarios</h3>
+    <p>En <strong>Mis Horarios</strong> el profesor puede crear y eliminar horarios de clase.</p>
+    <p>Campos requeridos:</p>
+    <ul>
+        <li>Curso</li>
+        <li>Dia de la semana</li>
+        <li>Grado</li>
+        <li>Seccion</li>
+        <li>Hora de inicio</li>
+        <li>Hora de fin</li>
+    </ul>
+
+    <p>Reglas aplicadas por el sistema:</p>
+    <ul>
+        <li>La hora de fin debe ser mayor que la hora de inicio.</li>
+        <li>El curso debe existir.</li>
+        <li>El horario queda asociado al profesor autenticado.</li>
+    </ul>
+
+    <h3>4.4 Eliminacion de horarios</h3>
+    <p>El profesor solo puede eliminar horarios que le pertenecen. El sistema solicita confirmacion antes de borrar.</p>
+
+    <h3>4.5 Registro de asistencia por horario</h3>
+    <p>En la seccion <strong>Asistencia</strong> el profesor selecciona uno de sus horarios y abre el scanner QR.</p>
+
+    <p>Flujo de uso:</p>
+    <ol>
+        <li>Filtrar horarios por dia si es necesario.</li>
+        <li>Seleccionar el horario deseado.</li>
+        <li>Pulsar <strong>Escanear QR</strong>.</li>
+        <li>Permitir el acceso a la camara.</li>
+        <li>Apuntar al QR del estudiante.</li>
+    </ol>
+
+    <p>Validaciones que hace el sistema:</p>
+    <ul>
+        <li>El QR debe existir y estar activo.</li>
+        <li>El estudiante debe existir.</li>
+        <li>El estudiante debe pertenecer al grado y seccion del horario seleccionado.</li>
+        <li>No debe tener asistencia previa para ese horario en la misma fecha.</li>
+    </ul>
+
+    <p>Estados posibles:</p>
+    <ul>
+        <li><code>present</code>: asistencia registrada dentro de la tolerancia.</li>
+        <li><code>late</code>: asistencia registrada con tardanza.</li>
+    </ul>
+
+    <p>La tardanza se calcula comparando la hora actual con la hora de inicio del horario mas una tolerancia de 15 minutos.</p>
+
+    <h3>4.6 Mensajes comunes para el profesor</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Situacion</th>
+                <th>Resultado esperado</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>QR invalido o inactivo</td>
+                <td>El sistema muestra error y no registra asistencia.</td>
+            </tr>
+            <tr>
+                <td>Estudiante no pertenece al horario</td>
+                <td>El sistema rechaza el escaneo.</td>
+            </tr>
+            <tr>
+                <td>Asistencia ya registrada hoy</td>
+                <td>El sistema informa que ya existe el registro.</td>
+            </tr>
+            <tr>
+                <td>Registro correcto</td>
+                <td>El sistema guarda la asistencia y devuelve mensaje de exito.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>5. Documentacion tecnica del flujo de asistencia general</h2>
+
+    <h3>5.1 Rutas principales</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Ruta</th>
+                <th>Metodo</th>
+                <th>Controlador</th>
+                <th>Descripcion</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>/</code></td>
+                <td>GET</td>
+                <td>GeneralAttendanceController@index</td>
+                <td>Muestra la pantalla publica del scanner de entrada general.</td>
+            </tr>
+            <tr>
+                <td><code>/attendance/general/scan</code></td>
+                <td>POST</td>
+                <td>GeneralAttendanceController@scan</td>
+                <td>Registra entrada general del estudiante por QR.</td>
+            </tr>
+            <tr>
+                <td><code>/attendance/process-absences</code></td>
+                <td>POST</td>
+                <td>GeneralAttendanceController@processAbsences</td>
+                <td>Procesa ausencias para una fecha y colegio.</td>
+            </tr>
+            <tr>
+                <td><code>/director/google-sheet</code></td>
+                <td>POST</td>
+                <td>GoogleSheetController@update</td>
+                <td>Guarda el ID de Google Sheets del colegio.</td>
+            </tr>
+            <tr>
+                <td><code>/director/entry-schedule</code></td>
+                <td>POST</td>
+                <td>GoogleSheetController@updateSchedule</td>
+                <td>Actualiza horario general de entrada.</td>
+            </tr>
+            <tr>
+                <td><code>/director/process-absences</code></td>
+                <td>POST</td>
+                <td>GoogleSheetController@processAbsences</td>
+                <td>Permite al director lanzar el procesamiento manual de ausencias.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>5.2 Flujo tecnico de registro de entrada general</h3>
+    <ol>
+        <li>El frontend publico escanea el QR usando <code>html5-qrcode</code>.</li>
+        <li>Se envia el UUID al endpoint <code>/attendance/general/scan</code>.</li>
+        <li>El backend valida que el UUID exista y el QR este activo.</li>
+        <li>Se carga el estudiante junto con grado, seccion y colegio.</li>
+        <li>Se evalua la hora actual contra <code>entry_start</code>, <code>entry_limit</code> y <code>entry_end</code>.</li>
+        <li>Se verifica si el estudiante ya tiene registro en <code>general_attendance</code> para la fecha actual.</li>
+        <li>Si no existe registro previo, se crea la asistencia con estado <code>on_time</code> o <code>late</code>.</li>
+        <li>Si el colegio tiene <code>google_sheet_id</code>, se intenta sincronizar la fila con Google Sheets.</li>
+        <li>El backend responde al frontend con mensaje de exito o rechazo.</li>
+    </ol>
+
+    <h3>5.3 Estructura de datos en la tabla general_attendance</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Campo</th>
+                <th>Uso</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>student_id</code></td>
+                <td>Identifica al estudiante.</td>
+            </tr>
+            <tr>
+                <td><code>school_id</code></td>
+                <td>Identifica al colegio.</td>
+            </tr>
+            <tr>
+                <td><code>qr_code_id</code></td>
+                <td>Relaciona el registro con el QR escaneado.</td>
+            </tr>
+            <tr>
+                <td><code>date</code></td>
+                <td>Fecha del registro.</td>
+            </tr>
+            <tr>
+                <td><code>time</code></td>
+                <td>Hora del registro. Puede ser nula en ausencias.</td>
+            </tr>
+            <tr>
+                <td><code>status</code></td>
+                <td>Valores previstos: <code>on_time</code>, <code>late</code>, <code>absent</code>.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>5.4 Reglas de negocio del ingreso general</h3>
+    <ul>
+        <li>Un estudiante solo puede tener un registro por fecha en <code>general_attendance</code>.</li>
+        <li>Si intenta marcar dos veces el mismo dia, el sistema devuelve estado <code>already_registered</code>.</li>
+        <li>Si marca antes del inicio, devuelve <code>too_early</code>.</li>
+        <li>Si marca despues del cierre, devuelve <code>too_late</code>.</li>
+        <li>La puntualidad se define por comparacion simple de cadenas de hora con formato <code>H:i:s</code>.</li>
+    </ul>
+
+    <h3>5.5 Procesamiento tecnico de ausencias</h3>
+    <ol>
+        <li>Se identifica el colegio y la fecha de proceso.</li>
+        <li>Se verifica si el horario ya cerro o si el proceso fue forzado.</li>
+        <li>Se consulta a todos los estudiantes del colegio.</li>
+        <li>Se consulta que estudiantes ya tienen registro <code>on_time</code> o <code>late</code> ese dia.</li>
+        <li>Se calcula la diferencia para obtener ausentes.</li>
+        <li>Por cada ausente, se crea un registro con estado <code>absent</code> y hora nula.</li>
+        <li>Se prepara un lote de filas para sincronizar con Google Sheets.</li>
+    </ol>
+
+    <div class="page-break"></div>
+
+    <h2>6. Documentacion tecnica de Google Sheets</h2>
+
+    <h3>6.1 Configuracion usada por el sistema</h3>
+    <p>La integracion utiliza la API de Google Sheets mediante el cliente oficial de Google para PHP.</p>
+    <p>Dependencias clave:</p>
+    <ul>
+        <li><code>Google\Client</code></li>
+        <li><code>Google\Service\Sheets</code></li>
+        <li><code>Google\Service\Sheets\ValueRange</code></li>
+    </ul>
+
+    <h3>6.2 Archivo de credenciales</h3>
+    <p>El sistema espera las credenciales en:</p>
+    <p><code>storage/app/google-credentials.json</code></p>
+    <p>Si el archivo no existe, se lanza una excepcion y la sincronizacion falla.</p>
+
+    <h3>6.3 Flujo interno de escritura</h3>
+    <ol>
+        <li>Se obtiene el ID de la hoja desde <code>schools.google_sheet_id</code>.</li>
+        <li>Se construye el cliente autenticado con la cuenta de servicio.</li>
+        <li>Se abre el spreadsheet y se toma el titulo de la primera pestana.</li>
+        <li>Se construye un rango para columnas A a G.</li>
+        <li>Se arma un <code>ValueRange</code> con una o varias filas.</li>
+        <li>Se llama al metodo <code>append</code> de Google Sheets.</li>
+    </ol>
+
+    <h3>6.4 Columnas esperadas en la hoja</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Columna</th>
+                <th>Contenido</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>A</td><td>Fecha</td></tr>
+            <tr><td>B</td><td>Hora</td></tr>
+            <tr><td>C</td><td>Nombre del estudiante</td></tr>
+            <tr><td>D</td><td>DNI</td></tr>
+            <tr><td>E</td><td>Grado</td></tr>
+            <tr><td>F</td><td>Seccion</td></tr>
+            <tr><td>G</td><td>Estado visible: Presente, Tarde o Ausente</td></tr>
+        </tbody>
+    </table>
+
+    <h3>6.5 Consideraciones tecnicas importantes</h3>
+    <ul>
+        <li>El valor enviado a <code>values</code> debe ser un arreglo de filas, no una fila plana.</li>
+        <li>Si se usa <code>append</code> sin parametros adecuados, la API puede interpretar la tabla de forma no deseada.</li>
+        <li>Si se usa <code>USER_ENTERED</code>, Google puede convertir fechas y horas a seriales numericos segun el formato de la hoja.</li>
+        <li>Si se usa <code>RAW</code>, Google conserva el texto exactamente como se envia.</li>
+        <li>Para evitar sobreescritura visual o inserciones en zonas incorrectas, conviene definir con cuidado el rango base y mantener la hoja sin huecos en la tabla.</li>
+    </ul>
+
+    <h3>6.6 Problemas detectados durante el analisis</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Problema</th>
+                <th>Causa tecnica</th>
+                <th>Efecto</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>La asistencia se guardaba en BD pero no en Google Sheets</td>
+                <td>Se enviaba una fila plana en lugar de una matriz de filas a <code>ValueRange</code>.</td>
+                <td>Google respondia <code>400 INVALID_ARGUMENT</code>.</td>
+            </tr>
+            <tr>
+                <td>No se mostraba error al usuario</td>
+                <td>La excepcion se atrapaba con <code>try/catch</code> y solo se registraba en log.</td>
+                <td>El frontend recibia exito aunque la hoja no se actualizara.</td>
+            </tr>
+            <tr>
+                <td>Los datos se sobreescribian o se insertaban arriba</td>
+                <td>Comportamiento de <code>append</code> basado en deteccion automatica de tabla y rango amplio.</td>
+                <td>Ubicacion inconsistente de nuevas filas.</td>
+            </tr>
+            <tr>
+                <td>Fecha y hora aparecian como seriales numericos</td>
+                <td>Uso de <code>USER_ENTERED</code> con columnas formateadas como numero o automatico.</td>
+                <td>Valores como <code>46106</code> o <code>0.7298611111</code>.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>6.7 Recomendaciones de mantenimiento</h3>
+    <ul>
+        <li>Conservar la hoja con encabezados estables en la primera fila.</li>
+        <li>Evitar filas vacias dentro del bloque principal de datos.</li>
+        <li>Verificar periodicamente que el documento siga compartido con la cuenta de servicio.</li>
+        <li>Revisar <code>storage/logs/laravel.log</code> cuando haya fallos silenciosos de sincronizacion.</li>
+        <li>Si se desea trazabilidad completa, devolver al frontend un aviso cuando falle la sincronizacion, aunque la BD se haya guardado correctamente.</li>
+    </ul>
+
+    <h2>7. Checklist operativo rapido</h2>
+    <ul>
+        <li>El colegio tiene configurado su <code>google_sheet_id</code>.</li>
+        <li>Existe el archivo <code>storage/app/google-credentials.json</code>.</li>
+        <li>La hoja fue compartida con la cuenta de servicio.</li>
+        <li>Los estudiantes cuentan con QR activo.</li>
+        <li>El horario general de entrada esta correctamente definido.</li>
+        <li>Los profesores tienen horarios creados si usaran asistencia por clase.</li>
+    </ul>
+
+    <h2>8. Cierre</h2>
+    <p>Este documento resume tanto el uso funcional del sistema para director y profesor como la arquitectura actual del flujo de asistencia y su integracion con Google Sheets. Se recomienda mantener esta documentacion sincronizada con cualquier cambio futuro en rutas, modelos, validaciones o formato de la hoja externa.</p>
+</body>
+</html>

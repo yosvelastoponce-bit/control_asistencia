@@ -14,8 +14,8 @@ return new class extends Migration
             $table->foreignId('school_id')->constrained('schools')->cascadeOnDelete();
             $table->foreignId('qr_code_id')->constrained('qr_codes')->cascadeOnDelete();
             $table->date('date');
-            $table->time('time');
-            $table->enum('status', ['on_time', 'late'])->default('on_time');
+            $table->time('time')->nullable(); //nullable para ausencia
+            $table->enum('status', ['on_time', 'late', 'absent'])->default('on_time');
             $table->timestamps();
 
             // Un estudiante solo puede tener un registro de entrada por día
