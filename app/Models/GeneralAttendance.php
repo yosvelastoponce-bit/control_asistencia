@@ -13,6 +13,7 @@ class GeneralAttendance extends Model
         'student_id',
         'school_id',
         'qr_code_id',
+        'registered_by',
         'date',
         'time',
         'status',
@@ -35,6 +36,11 @@ class GeneralAttendance extends Model
     public function qrCode(): BelongsTo
     {
         return $this->belongsTo(QrCode::class, 'qr_code_id');
+    }
+
+    public function registeredBy(): BelongsTo
+    {
+        return $this->belongsTo(AppUser::class, 'registered_by');
     }
 
     // Scope para obtener registros de una fecha específica

@@ -83,6 +83,7 @@ const eliminarCurso = async (id) => {
 const listaProfesores     = ref([...props.profesores])
 const mostrarFormProfesor = ref(false)
 const loadingProfesor     = ref(false)
+const togglingProfesorId  = ref(null)
 const erroresProfesor     = ref({})
 const formProfesor        = ref({ name: '', email: '', password: '', specialty: '' })
 
@@ -115,6 +116,27 @@ const eliminarProfesor = async (id) => {
     listaProfesores.value = listaProfesores.value.filter(p => p.id !== id)
   } catch (err) {
     alert(err.response?.data?.message ?? 'No se pudo eliminar.')
+  }
+}
+
+const togglePermisoAsistenciaProfesor = async (profesor) => {
+  const permisoActual = !!profesor.app_user?.can_take_general_attendance
+  togglingProfesorId.value = profesor.id
+
+  try {
+    const { data } = await axios.patch(
+      route('director.profesores.attendance-permission', profesor.id),
+      { can_take_general_attendance: !permisoActual }
+    )
+
+    const idx = listaProfesores.value.findIndex(p => p.id === profesor.id)
+    if (idx !== -1 && listaProfesores.value[idx].app_user) {
+      listaProfesores.value[idx].app_user.can_take_general_attendance = data.can_take_general_attendance
+    }
+  } catch (err) {
+    alert(err.response?.data?.message ?? 'No se pudo actualizar el permiso.')
+  } finally {
+    togglingProfesorId.value = null
   }
 }
 
@@ -482,6 +504,18 @@ const procesarAusencias = async (force = false) => {
         <!-- ── INICIO ── -->
         <section v-if="activeSection === 'inicio'">
           <p class="text-gray-500 text-sm mb-6">Bienvenido, <span class="text-gray-900 font-semibold">{{ director?.name }}</span>.</p>
+          <div class="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-blue-900">Modulo protegido de asistencia general</p>
+              <p class="text-xs text-blue-700 mt-1">
+                Solo usuarios autorizados pueden abrir el escaner y registrar ingresos en la entrada.
+              </p>
+            </div>
+            <a :href="route('general-attendance.index')"
+              class="inline-flex items-center justify-center rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-950 transition-colors">
+              Abrir escaner general
+            </a>
+          </div>
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <div v-for="stat in statCards" :key="stat.label" class="bg-gray-50 border border-gray-200 rounded-xl p-5">
               <p class="text-3xl font-bold text-gray-900">{{ stats?.[stat.key] ?? 0 }}</p>
@@ -601,17 +635,36 @@ const procesarAusencias = async (force = false) => {
                   <th class="text-left px-5 py-3 text-gray-500 font-medium">Nombre</th>
                   <th class="text-left px-5 py-3 text-gray-500 font-medium">Email</th>
                   <th class="text-left px-5 py-3 text-gray-500 font-medium">Especialidad</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">Permiso asistencia</th>
                   <th class="px-5 py-3"/>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="!listaProfesores.length">
-                  <td colspan="4" class="px-5 py-8 text-center text-gray-400">Sin profesores registrados.</td>
+                  <td colspan="5" class="px-5 py-8 text-center text-gray-400">Sin profesores registrados.</td>
                 </tr>
                 <tr v-for="p in listaProfesores" :key="p.id" class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                   <td class="px-5 py-3 text-gray-900">{{ p.app_user?.name ?? p.name }}</td>
                   <td class="px-5 py-3 text-gray-500">{{ p.app_user?.email ?? p.email ?? '—' }}</td>
                   <td class="px-5 py-3 text-gray-500">{{ p.specialty ?? '—' }}</td>
+                  <td class="px-5 py-3">
+                    <button
+                      @click="togglePermisoAsistenciaProfesor(p)"
+                      :disabled="togglingProfesorId === p.id"
+                      class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-60"
+                      :class="p.app_user?.can_take_general_attendance
+                        ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
+                        : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-100'"
+                    >
+                      {{
+                        togglingProfesorId === p.id
+                          ? 'Actualizando...'
+                          : p.app_user?.can_take_general_attendance
+                            ? 'Permitido'
+                            : 'Sin permiso'
+                      }}
+                    </button>
+                  </td>
                   <td class="px-5 py-3 text-right">
                     <button @click="eliminarProfesor(p.id)" class="text-red-600 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors">Eliminar</button>
                   </td>

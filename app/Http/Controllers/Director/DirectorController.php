@@ -61,6 +61,7 @@ class DirectorController extends Controller
                 'email'     => $request->email,
                 'password'  => Hash::make($request->password),
                 'role'      => 'director',
+                'can_take_general_attendance' => true,
             ]);
         });
 

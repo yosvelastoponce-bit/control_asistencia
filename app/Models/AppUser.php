@@ -18,6 +18,7 @@ class AppUser extends Authenticatable
         'email',
         'password',
         'role',
+        'can_take_general_attendance',
     ];
 
     protected $hidden = [
@@ -29,7 +30,13 @@ class AppUser extends Authenticatable
         return [
             'created_at' => 'datetime',
             'password'   => 'hashed',
+            'can_take_general_attendance' => 'boolean',
         ];
+    }
+
+    public function canTakeGeneralAttendance(): bool
+    {
+        return (bool) $this->can_take_general_attendance;
     }
 
     public function school(): BelongsTo

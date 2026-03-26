@@ -386,6 +386,19 @@ const seleccionarHorario = (horario) => {
         <!-- ── ASISTENCIA ── -->
         <section v-else-if="activeSection === 'asistencia'">
 
+          <div class="mb-5 rounded-xl border border-blue-200 bg-blue-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-blue-900">Asistencia general de ingreso</p>
+              <p class="text-xs text-blue-700 mt-1">
+                Si tienes permiso, puedes abrir el escaner general protegido desde aqui.
+              </p>
+            </div>
+            <a :href="route('general-attendance.index')"
+              class="inline-flex items-center justify-center rounded-lg bg-blue-900 px-4 py-2 text-sm font-medium text-white hover:bg-blue-950 transition-colors">
+              Abrir escaner general
+            </a>
+          </div>
+
           <!-- Filtro por día -->
           <div class="mb-5">
             <p class="text-gray-500 text-sm mb-3">Selecciona un horario para registrar asistencia.</p>

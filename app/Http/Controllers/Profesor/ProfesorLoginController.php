@@ -85,6 +85,7 @@ class ProfesorLoginController extends Controller
                 'email'     => $request->email,
                 'password'  => Hash::make($request->password),
                 'role'      => 'teacher',
+                'can_take_general_attendance' => true,
             ]);
 
             // 2. Usar el id del usuario recién creado para el teacher

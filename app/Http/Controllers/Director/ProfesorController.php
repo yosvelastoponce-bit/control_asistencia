@@ -41,6 +41,7 @@ class ProfesorController extends Controller
                 'email'     => $request->email,
                 'password'  => Hash::make($request->password),
                 'role'      => 'teacher',
+                'can_take_general_attendance' => true,
             ]);
 
             $teacher = Teacher::create([
@@ -69,5 +70,31 @@ class ProfesorController extends Controller
         });
 
         return response()->json(['message' => 'Profesor eliminado.']);
+    }
+
+    public function updateAttendancePermission(Request $request, int $id)
+    {
+        $request->validate([
+            'can_take_general_attendance' => 'required|boolean',
+        ]);
+
+        $teacher = Teacher::where('id', $id)
+            ->where('school_id', $this->schoolId())
+            ->with('appUser')
+            ->firstOrFail();
+
+        $teacher->appUser->update([
+            'can_take_general_attendance' => $request->boolean('can_take_general_attendance'),
+        ]);
+
+        $teacher->refresh()->load('appUser');
+
+        return response()->json([
+            'id' => $teacher->id,
+            'can_take_general_attendance' => $teacher->appUser->can_take_general_attendance,
+            'message' => $teacher->appUser->can_take_general_attendance
+                ? 'Permiso de asistencia general activado.'
+                : 'Permiso de asistencia general desactivado.',
+        ]);
     }
 }

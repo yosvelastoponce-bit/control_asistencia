@@ -42,7 +42,7 @@ Route::get('/Index', function(){
     return Inertia::render('Profesor/Index');
 })->name('index_profesor');
 
-Route::get('/', [GeneralAttendanceController::class, 'index'])->name('home');
+Route::get('/', [GeneralAttendanceController::class, 'publicHome'])->name('home');
 Route::post('/attendance/general/scan', [GeneralAttendanceController::class, 'scan'])
      ->name('attendance.general.scan');
 
@@ -67,6 +67,9 @@ Route::get('/attendance/statistics', [GeneralAttendanceController::class, 'getSt
 Route::get('/profesor/login', [ProfesorLoginController::class, 'showLogin'])->name('profesor.login');
 Route::post('/profesor/login', [ProfesorLoginController::class, 'login'])->name('profesor.login.post');
 Route::post('/profesor/logout', [ProfesorLoginController::class, 'logout'])->name('profesor.logout');
+
+Route::get('/general-attendance', [GeneralAttendanceController::class, 'index'])->name('general-attendance.index');
+Route::post('/general-attendance/logout', [ProfesorLoginController::class, 'logout'])->name('general-attendance.logout');
 
 // Rutas protegidas — solo si está logueado como profesor
 Route::middleware('auth:app_user')->group(function () {
@@ -104,6 +107,8 @@ Route::middleware('auth:app_user')->group(function () {
     // Profesores y Estudiantes
     Route::post('/director/profesores',         [ProfesorController::class, 'store'])->name('director.profesores.store');
     Route::delete('/director/profesores/{id}',  [ProfesorController::class, 'destroy'])->name('director.profesores.destroy');
+    Route::patch('/director/profesores/{id}/attendance-permission', [ProfesorController::class, 'updateAttendancePermission'])
+        ->name('director.profesores.attendance-permission');
 
     Route::post('/director/estudiantes',        [EstudianteController::class, 'store'])->name('director.estudiantes.store');
     Route::delete('/director/estudiantes/{id}', [EstudianteController::class, 'destroy'])->name('director.estudiantes.destroy');

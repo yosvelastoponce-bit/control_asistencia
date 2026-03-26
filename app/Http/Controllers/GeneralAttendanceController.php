@@ -12,18 +12,50 @@ use Google\Client as GoogleClient;
 use Google\Service\Sheets;
 use Google\Service\Sheets\ValueRange;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class GeneralAttendanceController extends Controller
 {
     public function index()
     {
-        return Inertia::render('Welcome', [
-            'scanner_mode' => 'general_entry',
+        $user = Auth::guard('app_user')->user();
+
+        if (!$user) {
+            return redirect()->route('home');
+        }
+
+        if (!$user->canTakeGeneralAttendance()) {
+            abort(403, 'No tienes permisos para registrar asistencia general.');
+        }
+
+        return Inertia::render('GeneralAttendance/Index', [
+            'auth' => [
+                'user' => $user,
+            ],
+        ]);
+    }
+
+    public function publicHome()
+    {
+        return Inertia::render('Home', [
+            'auth' => [
+                'user' => Auth::guard('app_user')->user(),
+            ],
         ]);
     }
 
     public function scan(Request $request)
     {
+        $user = Auth::guard('app_user')->user();
+
+        if (!$user || !$user->canTakeGeneralAttendance()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permisos para registrar asistencia general.',
+                'status'  => 'unauthorized',
+            ], 403);
+        }
+
         $request->validate([
             'uuid' => 'required|string',
         ]);
@@ -92,6 +124,7 @@ class GeneralAttendanceController extends Controller
             'student_id' => $student->id,
             'school_id'  => $student->school_id,
             'qr_code_id' => $qrCode->id,
+            'registered_by' => $user->id,
             'date'       => $today,
             'time'       => $timeNow,
             'status'     => $status,
