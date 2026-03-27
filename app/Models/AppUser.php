@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AppUser extends Authenticatable
 {
+    use HasApiTokens;
     protected $table = 'app_users';
 
     public $timestamps = false;
