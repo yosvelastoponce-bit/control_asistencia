@@ -1,0 +1,1 @@
+import{c as t,a as s,o as a}from"./app-B4NpObxZ.js";const o={class:"p-6"},r={__name:"Index",setup(n){return(c,e)=>(a(),t("div",o,[...e[0]||(e[0]=[s("h1",{class:"text-2xl font-bold"},"Página de Inicio de App",-1),s("p",null,"Este es el archivo Index.vue que estaba vacío.",-1)])]))}};export{r as default};
