@@ -157,7 +157,7 @@ class DirectorController extends Controller
             'director'    => $user,
             'school' => array_merge($school->toArray(), [
                 'logo_url' => $school->logo_path
-                    ? Storage::url($school->logo_path)
+                    ? route('school.logo.show', ['school' => $school->id, 'v' => optional($school->created_at)?->timestamp ?? time()])
                     : null,
             ]),
             'stats'       => $stats,

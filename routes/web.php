@@ -88,6 +88,7 @@ Route::post('/director/register', [DirectorController::class, 'register'])->name
 
 Route::get('/director/login', [DirectorController::class, 'showLogin'])->name('director.login');
 Route::post('/director/login', [DirectorController::class, 'login'])->name('director.login.post');
+Route::get('/school-logo/{school}', [SchoolLogoController::class, 'show'])->name('school.logo.show');
 
 Route::middleware('auth:app_user')->group(function () {
 
