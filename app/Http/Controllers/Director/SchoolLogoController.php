@@ -10,6 +10,18 @@ use Illuminate\Support\Facades\Storage;
 
 class SchoolLogoController extends Controller
 {
+    public function show(School $school)
+    {
+        if (! $school->logo_path || ! Storage::disk('public')->exists($school->logo_path)) {
+            abort(404);
+        }
+
+        $file = Storage::disk('public')->get($school->logo_path);
+        $mime = Storage::disk('public')->mimeType($school->logo_path) ?? 'application/octet-stream';
+
+        return response($file, 200)->header('Content-Type', $mime);
+    }
+
     public function upload(Request $request)
     {
         $request->validate([
@@ -36,7 +48,7 @@ class SchoolLogoController extends Controller
 
         return response()->json([
             'message'   => 'Logo actualizado correctamente.',
-            'logo_url'  => Storage::url($path),
+            'logo_url'  => route('school.logo.show', ['school' => $school->id, 'v' => now()->timestamp]),
             'logo_path' => $path,
         ]);
     }
