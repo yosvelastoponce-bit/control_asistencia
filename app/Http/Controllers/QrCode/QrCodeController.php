@@ -14,7 +14,17 @@ class QrCodeController extends Controller
 {
     public function generateQr()
     {
-        $schoolId = Auth::guard('app_user')->user()->school_id;
+        $user = Auth::guard('app_user')->user();
+
+        if (! $user) {
+            return redirect()->route('director.login');
+        }
+
+        if (! in_array($user->role, ['director', 'teacher'], true)) {
+            abort(403, 'No tienes permisos para descargar codigos QR.');
+        }
+
+        $schoolId = $user->school_id;
         $school   = \App\Models\School::find($schoolId);
 
         $students = Student::with('qrCode')

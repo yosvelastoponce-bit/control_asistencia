@@ -816,7 +816,7 @@ const procesarAusencias = async (force = false) => {
           <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
             <div class="px-5 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <h3 class="text-gray-900 font-semibold text-sm">Estudiantes registrados</h3>
-              <a :href="route('profesor.qr')" target="_blank"
+              <a :href="route('director.qr')" target="_blank"
                 class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-300 transition-colors">
                 Descargar QR
               </a>
