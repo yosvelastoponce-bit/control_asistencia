@@ -17,6 +17,22 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        $middleware->redirectGuestsTo(function ($request) {
+            if ($request->is('director') || $request->is('director/*')) {
+                return '/director/login';
+            }
+
+            if ($request->is('profesor') || $request->is('profesor/*')) {
+                return '/profesor/login';
+            }
+
+            if ($request->is('general-attendance') || $request->is('general-attendance/*')) {
+                return '/';
+            }
+
+            return '/login';
+        });
+
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {

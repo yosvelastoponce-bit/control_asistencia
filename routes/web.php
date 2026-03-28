@@ -94,6 +94,7 @@ Route::middleware('auth:app_user')->group(function () {
     // Director
     Route::post('/director/logout',          [DirectorController::class, 'logout'])->name('director.logout');
     Route::get('/director/dashboard',        [DirectorController::class, 'dashboard'])->name('director.dashboard');
+    Route::get('/director/qr-codes',         [QrCodeController::class, 'generateQr'])->name('director.qr');
 
     // Grados, Secciones, Cursos (CRUD simple)
     Route::apiResource('director/grados',    GradoController::class)->names('director.grados');
