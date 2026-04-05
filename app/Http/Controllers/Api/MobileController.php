@@ -23,12 +23,13 @@ class MobileController extends Controller
         $data = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+            'role' => ['required', 'in:director,teacher'],
             'device_name' => ['nullable', 'string', 'max:255'],
         ]);
 
         $user = AppUser::with('school')
             ->where('email', $data['email'])
-            ->whereIn('role', ['director', 'teacher'])
+            ->where('role', $data['role'])
             ->first();
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
