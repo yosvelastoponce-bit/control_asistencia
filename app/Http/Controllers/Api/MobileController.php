@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class MobileController extends Controller
 {
@@ -55,7 +56,15 @@ class MobileController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()?->currentAccessToken()?->delete();
+        $token = $this->resolveAccessToken($request);
+
+        if (!$token) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $token->delete();
 
         return response()->json([
             'message' => 'Sesion cerrada correctamente.',
@@ -64,8 +73,13 @@ class MobileController extends Controller
 
     public function bootstrap(Request $request): JsonResponse
     {
-        /** @var AppUser $user */
-        $user = $request->user();
+        $user = $this->resolveMobileUser($request);
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
         $school = $user->school;
 
         $students = Student::query()
@@ -96,8 +110,12 @@ class MobileController extends Controller
 
     public function attendance(Request $request): JsonResponse
     {
-        /** @var AppUser $user */
-        $user = $request->user();
+        $user = $this->resolveMobileUser($request);
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
 
         if (!$user->canTakeGeneralAttendance()) {
             return response()->json([
@@ -236,5 +254,35 @@ class MobileController extends Controller
                 'insertDataOption' => 'INSERT_ROWS',
             ]
         );
+    }
+
+    private function resolveMobileUser(Request $request): ?AppUser
+    {
+        $token = $this->resolveAccessToken($request);
+
+        if (!$token) {
+            return null;
+        }
+
+        $tokenable = $token->tokenable;
+
+        if (!$tokenable instanceof AppUser) {
+            return null;
+        }
+
+        $token->forceFill(['last_used_at' => now()])->save();
+
+        return $tokenable->loadMissing('school');
+    }
+
+    private function resolveAccessToken(Request $request): ?PersonalAccessToken
+    {
+        $plainTextToken = $request->bearerToken();
+
+        if (!$plainTextToken) {
+            return null;
+        }
+
+        return PersonalAccessToken::findToken($plainTextToken);
     }
 }
