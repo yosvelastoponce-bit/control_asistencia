@@ -71,42 +71,57 @@ class MobileController extends Controller
         ]);
     }
 
+    // public function bootstrap(Request $request): JsonResponse
+    // {
+    //     $user = $this->resolveMobileUser($request);
+    //     if (!$user) {
+    //         return response()->json([
+    //             'message' => 'Unauthenticated.',
+    //         ], 401);
+    //     }
+
+    //     $school = $user->school;
+
+    //     $students = Student::query()
+    //         ->where('school_id', $user->school_id)
+    //         ->with(['grade:id,name', 'section:id,name', 'qrCode:id,student_id,uuid,active'])
+    //         ->orderBy('name')
+    //         ->get()
+    //         ->map(function (Student $student) {
+    //             return [
+    //                 'id' => $student->id,
+    //                 'name' => $student->name,
+    //                 'dni' => $student->dni,
+    //                 'grade_name' => $student->grade?->name ?? '',
+    //                 'section_name' => $student->section?->name ?? '',
+    //                 'qr_uuid' => $student->qrCode?->uuid ?? '',
+    //                 'school_id' => $student->school_id,
+    //             ];
+    //         })
+    //         ->filter(fn (array $student) => $student['qr_uuid'] !== '')
+    //         ->values();
+
+    //     return response()->json([
+    //         'user' => $this->userPayload($user),
+    //         'school' => $this->schoolPayload($school),
+    //         'students' => $students,
+    //     ]);
+    // }
     public function bootstrap(Request $request): JsonResponse
     {
-        $user = $this->resolveMobileUser($request);
-        if (!$user) {
-            return response()->json([
-                'message' => 'Unauthenticated.',
-            ], 401);
-        }
-
-        $school = $user->school;
-
-        $students = Student::query()
-            ->where('school_id', $user->school_id)
-            ->with(['grade:id,name', 'section:id,name', 'qrCode:id,student_id,uuid,active'])
-            ->orderBy('name')
-            ->get()
-            ->map(function (Student $student) {
-                return [
-                    'id' => $student->id,
-                    'name' => $student->name,
-                    'dni' => $student->dni,
-                    'grade_name' => $student->grade?->name ?? '',
-                    'section_name' => $student->section?->name ?? '',
-                    'qr_uuid' => $student->qrCode?->uuid ?? '',
-                    'school_id' => $student->school_id,
-                ];
-            })
-            ->filter(fn (array $student) => $student['qr_uuid'] !== '')
-            ->values();
-
         return response()->json([
-            'user' => $this->userPayload($user),
-            'school' => $this->schoolPayload($school),
-            'students' => $students,
+            'bearerToken' => $request->bearerToken(),
+            'authorization_header' => $request->header('Authorization'),
+            'http_authorization' => $request->server('HTTP_AUTHORIZATION'),
+            'redirect_http_authorization' => $request->server('REDIRECT_HTTP_AUTHORIZATION'),
+            'all_headers' => $request->headers->all(),
+            'server' => [
+                'HTTP_AUTHORIZATION' => $_SERVER['HTTP_AUTHORIZATION'] ?? null,
+                'REDIRECT_HTTP_AUTHORIZATION' => $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null,
+            ],
         ]);
     }
+
 
     public function attendance(Request $request): JsonResponse
     {
