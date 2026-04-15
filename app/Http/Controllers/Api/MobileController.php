@@ -275,14 +275,46 @@ class MobileController extends Controller
         return $tokenable->loadMissing('school');
     }
 
+    // private function resolveAccessToken(Request $request): ?PersonalAccessToken
+    // {
+    //     $plainTextToken = $request->bearerToken();
+
+    //     if (!$plainTextToken) {
+    //         return null;
+    //     }
+
+    //     return PersonalAccessToken::findToken($plainTextToken);
+    // }
     private function resolveAccessToken(Request $request): ?PersonalAccessToken
     {
         $plainTextToken = $request->bearerToken();
-
+    
+        if (!$plainTextToken) {
+            $authorizationHeader = $request->header('Authorization')
+                ?? $request->server('HTTP_AUTHORIZATION')
+                ?? $request->server('REDIRECT_HTTP_AUTHORIZATION')
+                ?? $_SERVER['HTTP_AUTHORIZATION'] ?? null
+                ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null;
+    
+            if ($authorizationHeader && str_starts_with($authorizationHeader, 'Bearer ')) {
+                $plainTextToken = substr($authorizationHeader, 7);
+            }
+        }
+    
+        if (!$plainTextToken && function_exists('apache_request_headers')) {
+            $headers = apache_request_headers();
+            $authorizationHeader = $headers['Authorization'] ?? $headers['authorization'] ?? null;
+    
+            if ($authorizationHeader && str_starts_with($authorizationHeader, 'Bearer ')) {
+                $plainTextToken = substr($authorizationHeader, 7);
+            }
+        }
+    
         if (!$plainTextToken) {
             return null;
         }
-
-        return PersonalAccessToken::findToken($plainTextToken);
+    
+        return PersonalAccessToken::findToken(trim($plainTextToken));
     }
+
 }
