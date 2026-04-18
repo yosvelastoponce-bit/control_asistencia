@@ -263,6 +263,69 @@ const googleSheetId       = ref(props.school?.google_sheet_id ?? '')
 const loadingSheet        = ref(false)
 const successSheet        = ref('')
 const errorSheet          = ref('')
+const profileForm         = ref({
+  name: props.director?.name ?? '',
+  email: props.director?.email ?? '',
+})
+const schoolForm          = ref({
+  name: props.school?.name ?? '',
+  code: props.school?.code ?? '',
+  address: props.school?.address ?? '',
+})
+const loadingProfile      = ref(false)
+const loadingSchoolData   = ref(false)
+const successProfile      = ref('')
+const errorProfile        = ref('')
+const successSchoolData   = ref('')
+const errorSchoolData     = ref('')
+
+const guardarPerfil = async () => {
+  loadingProfile.value = true
+  successProfile.value = ''
+  errorProfile.value = ''
+
+  try {
+    const { data } = await axios.patch(route('app-user.settings.profile'), profileForm.value)
+    profileForm.value.name = data.user.name
+    profileForm.value.email = data.user.email
+    if (props.director) {
+      props.director.name = data.user.name
+      props.director.email = data.user.email
+    }
+    successProfile.value = data.message
+  } catch (err) {
+    errorProfile.value = err.response?.data?.message
+      ?? Object.values(err.response?.data?.errors ?? {})?.[0]?.[0]
+      ?? 'Error al guardar.'
+  } finally {
+    loadingProfile.value = false
+  }
+}
+
+const guardarDatosColegio = async () => {
+  loadingSchoolData.value = true
+  successSchoolData.value = ''
+  errorSchoolData.value = ''
+
+  try {
+    const { data } = await axios.patch(route('app-user.settings.school'), schoolForm.value)
+    schoolForm.value.name = data.school.name
+    schoolForm.value.code = data.school.code
+    schoolForm.value.address = data.school.address
+    if (props.school) {
+      props.school.name = data.school.name
+      props.school.code = data.school.code
+      props.school.address = data.school.address
+    }
+    successSchoolData.value = data.message
+  } catch (err) {
+    errorSchoolData.value = err.response?.data?.message
+      ?? Object.values(err.response?.data?.errors ?? {})?.[0]?.[0]
+      ?? 'Error al guardar.'
+  } finally {
+    loadingSchoolData.value = false
+  }
+}
 
 const guardarGoogleSheet = async () => {
   if (!googleSheetId.value.trim()) { errorSheet.value = 'El ID no puede estar vacío.'; return }
@@ -365,6 +428,27 @@ const limpiarFiltros = () => {
   seccionFiltro.value      = null
 }
  
+const mostrarTablaReportes = ref(true)
+const descargandoReporteExcel = ref(false)
+const modoFechaReporte = ref('all')
+const fechaReporte = ref('')
+
+const descargarReporteAsistencias = () => {
+  descargandoReporteExcel.value = true
+
+  const params = {}
+  if (gradoFiltro.value) params.grade_id = gradoFiltro.value
+  if (seccionFiltro.value) params.section_id = seccionFiltro.value
+  params.date_filter_mode = modoFechaReporte.value
+  if (modoFechaReporte.value === 'date' && fechaReporte.value) params.date = fechaReporte.value
+
+  window.open(route('director.reports.attendance.export', params), '_blank')
+
+  window.setTimeout(() => {
+    descargandoReporteExcel.value = false
+  }, 1200)
+}
+
 // Al cambiar grado, resetear sección
 watch(gradoFiltro, () => { seccionFiltro.value = null })
 
@@ -911,27 +995,73 @@ const procesarAusencias = async (force = false) => {
             </div>
           </div>
          
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-5">
+            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div class="flex-1">
+                <h3 class="text-gray-900 font-semibold text-sm">Reporte de asistencias en Excel</h3>
+                <p class="text-gray-500 text-xs mt-1">
+                  Exporta las asistencias registradas segun el filtro actual: general, por grado o por seccion.
+                </p>
+                <p class="text-gray-400 text-xs mt-2">
+                  El archivo incluye nombre, dni, grado, seccion, fecha y estado.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 max-w-2xl">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1.5">Fechas</label>
+                    <select v-model="modoFechaReporte"
+                      class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800">
+                      <option value="all">Todas las fechas</option>
+                      <option value="date">Por fecha</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1.5">Fecha</label>
+                    <input v-model="fechaReporte" type="date" :disabled="modoFechaReporte !== 'date'"
+                      class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"/>
+                  </div>
+                </div>
+              </div>
+              <button
+                @click="descargarReporteAsistencias"
+                :disabled="descargandoReporteExcel"
+                class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50">
+                <svg v-if="descargandoReporteExcel" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                {{ descargandoReporteExcel ? 'Preparando...' : 'Descargar Excel' }}
+              </button>
+            </div>
+          </div>
+         
           <!-- Tabla de resultados -->
           <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div class="px-5 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <h3 class="text-gray-900 font-semibold text-sm">
                 {{ gradoFiltro
                   ? (seccionFiltro
-                    ? grados.find(g => g.id === gradoFiltro)?.name + ' — Sección ' + seccionesFiltro.find(s => s.id === seccionFiltro)?.name
+                    ? grados.find(g => g.id === gradoFiltro)?.name + ' - Seccion ' + seccionesFiltro.find(s => s.id === seccionFiltro)?.name
                     : grados.find(g => g.id === gradoFiltro)?.name)
                   : 'Todos los estudiantes' }}
               </h3>
-              <span class="text-gray-400 text-xs">{{ estudiantesFiltrados.length }} estudiantes</span>
+              <div class="flex items-center gap-3">
+                <span class="text-gray-400 text-xs">{{ estudiantesFiltrados.length }} estudiantes</span>
+                <button
+                  @click="mostrarTablaReportes = !mostrarTablaReportes"
+                  class="text-gray-500 hover:text-gray-900 text-xs px-3 py-1.5 rounded-lg border border-gray-300 hover:border-gray-500 transition-colors">
+                  {{ mostrarTablaReportes ? 'Ocultar tabla' : 'Mostrar tabla' }}
+                </button>
+              </div>
             </div>
          
-            <table class="w-full text-sm">
+            <table v-if="mostrarTablaReportes" class="w-full text-sm">
               <thead class="border-b border-gray-200 bg-gray-50">
                 <tr>
                   <th class="text-left px-5 py-3 text-gray-500 font-medium">#</th>
                   <th class="text-left px-5 py-3 text-gray-500 font-medium">Nombre</th>
                   <th class="text-left px-5 py-3 text-gray-500 font-medium">DNI</th>
                   <th class="text-left px-5 py-3 text-gray-500 font-medium">Grado</th>
-                  <th class="text-left px-5 py-3 text-gray-500 font-medium">Sección</th>
+                  <th class="text-left px-5 py-3 text-gray-500 font-medium">Seccion</th>
                   <th class="text-left px-5 py-3 text-gray-500 font-medium">QR</th>
                 </tr>
               </thead>
@@ -947,19 +1077,22 @@ const procesarAusencias = async (force = false) => {
                   class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                   <td class="px-5 py-3 text-gray-400 text-xs">{{ idx + 1 }}</td>
                   <td class="px-5 py-3 text-gray-900 font-medium">{{ e.name }}</td>
-                  <td class="px-5 py-3 text-gray-500 font-mono text-xs">{{ e.dni ?? '—' }}</td>
-                  <td class="px-5 py-3 text-gray-500">{{ e.grade?.name ?? '—' }}</td>
-                  <td class="px-5 py-3 text-gray-500">{{ e.section?.name ?? '—' }}</td>
+                  <td class="px-5 py-3 text-gray-500 font-mono text-xs">{{ e.dni ?? '�' }}</td>
+                  <td class="px-5 py-3 text-gray-500">{{ e.grade?.name ?? '�' }}</td>
+                  <td class="px-5 py-3 text-gray-500">{{ e.section?.name ?? '�' }}</td>
                   <td class="px-5 py-3">
                     <span v-if="e.qr_code?.active"
                       class="inline-flex items-center bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full border border-green-300">
-                      ✓ Activo
+                      ? Activo
                     </span>
                     <span v-else class="text-gray-400 text-xs">Sin QR</span>
                   </td>
                 </tr>
               </tbody>
             </table>
+            <div v-else class="px-5 py-10 text-center text-gray-400 text-sm">
+              Tabla oculta para dar mas espacio al panel de exportacion.
+            </div>
           </div>
          
         </section>
@@ -1000,23 +1133,100 @@ const procesarAusencias = async (force = false) => {
 
         <!-- ── CONFIGURACIÓN ── -->
         <section v-else-if="activeSection === 'configuracion'">
-          <div class="max-w-lg">
+          <div class="max-w-5xl">
 
-            <!-- Info del colegio -->
-            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-5">
-              <h3 class="text-gray-900 font-semibold mb-4">Información del colegio</h3>
-              <div class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-gray-500">Nombre</span>
-                  <span class="text-gray-900 font-medium">{{ school?.name }}</span>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-5">
+              <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                <div class="flex items-start gap-3 mb-4">
+                  <div class="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="text-gray-900 font-semibold text-sm">Datos del director</h3>
+                    <p class="text-gray-500 text-xs mt-0.5">
+                      Actualiza tu nombre y correo electronico.
+                    </p>
+                  </div>
                 </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-500">Código</span>
-                  <span class="text-gray-900 font-mono">{{ school?.code }}</span>
+
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1.5">Nombre completo *</label>
+                    <input v-model="profileForm.name" type="text"
+                      class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1.5">Correo electronico *</label>
+                    <input v-model="profileForm.email" type="email"
+                      class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                  </div>
                 </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-500">Dirección</span>
-                  <span class="text-gray-900">{{ school?.address ?? '—' }}</span>
+
+                <p v-if="errorProfile" class="mt-4 text-red-600 text-xs bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{{ errorProfile }}</p>
+                <div v-if="successProfile" class="mt-4 text-green-700 text-xs bg-green-50 border border-green-200 px-3 py-2 rounded-lg">? {{ successProfile }}</div>
+
+                <div class="mt-4 flex justify-end">
+                  <button @click="guardarPerfil" :disabled="loadingProfile"
+                    class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
+                    <svg v-if="loadingProfile" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    {{ loadingProfile ? 'Guardando...' : 'Guardar perfil' }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                <div class="flex items-start gap-3 mb-4">
+                  <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l9-4 9 4m-9 13V10m-7 10h14a2 2 0 002-2V8a2 2 0 00-1.106-1.789l-7-3.5a2 2 0 00-1.788 0l-7 3.5A2 2 0 003 8v10a2 2 0 002 2z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="text-gray-900 font-semibold text-sm">Datos del colegio</h3>
+                    <p class="text-gray-500 text-xs mt-0.5">
+                      Edita el nombre, codigo y direccion del colegio.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1.5">Nombre del colegio *</label>
+                    <input v-model="schoolForm.name" type="text"
+                      class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1.5">Codigo del colegio *</label>
+                    <input v-model="schoolForm.code" type="text"
+                      class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1.5">Direccion *</label>
+                    <textarea v-model="schoolForm.address" rows="4"
+                      class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"></textarea>
+                  </div>
+                </div>
+
+                <p v-if="errorSchoolData" class="mt-4 text-red-600 text-xs bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{{ errorSchoolData }}</p>
+                <div v-if="successSchoolData" class="mt-4 text-green-700 text-xs bg-green-50 border border-green-200 px-3 py-2 rounded-lg">? {{ successSchoolData }}</div>
+
+                <div class="mt-4 flex justify-end">
+                  <button @click="guardarDatosColegio" :disabled="loadingSchoolData"
+                    class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
+                    <svg v-if="loadingSchoolData" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    {{ loadingSchoolData ? 'Guardando...' : 'Guardar colegio' }}
+                  </button>
                 </div>
               </div>
             </div>
@@ -1231,3 +1441,8 @@ const procesarAusencias = async (force = false) => {
     </div>
   </div>
 </template>
+
+
+
+
+

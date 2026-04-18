@@ -24,6 +24,13 @@ class GeneralAttendanceController extends Controller
             return redirect()->route('home');
         }
 
+        if (!$user->belongsToEnabledSchool()) {
+            Auth::guard('app_user')->logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+            return redirect()->route('home');
+        }
+
         if (!$user->canTakeGeneralAttendance()) {
             abort(403, 'No tienes permisos para registrar asistencia general.');
         }
@@ -53,6 +60,14 @@ class GeneralAttendanceController extends Controller
                 'success' => false,
                 'message' => 'No tienes permisos para registrar asistencia general.',
                 'status'  => 'unauthorized',
+            ], 403);
+        }
+
+        if (!$user->belongsToEnabledSchool()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El acceso de tu colegio esta bloqueado por el super admin.',
+                'status' => 'school_blocked',
             ], 403);
         }
 
@@ -306,6 +321,13 @@ class GeneralAttendanceController extends Controller
         $force    = $request->boolean('force', false);
  
         $school = \App\Models\School::findOrFail($schoolId);
+
+        if (!$school->allowsAccess()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El acceso de este colegio esta bloqueado por el super admin.',
+            ], 403);
+        }
  
         // Verificar si ya cerró el horario (salvo que se fuerce)
         if (!$force && !$school->isAttendanceClosed()) {

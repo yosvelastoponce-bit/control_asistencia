@@ -19,13 +19,20 @@ class School extends Model
         'entry_limit', 
         'entry_end',
         'auto_process_absences',
-        'logo_path'
+        'logo_path',
+        'is_access_enabled',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'auto_process_absences' => 'boolean',
+        'is_access_enabled' => 'boolean',
     ];
+
+    public function allowsAccess(): bool
+    {
+        return (bool) $this->is_access_enabled;
+    }
 
     public function appUsers(): HasMany
     {

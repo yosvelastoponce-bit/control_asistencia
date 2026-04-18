@@ -9,6 +9,8 @@ const props = defineProps({
   profesores: { type: Array, default: () => [] },
   cursos:     { type: Array, default: () => [] },
   horarios:   { type: Array, default: () => [] },
+  grados:     { type: Array, default: () => [] },
+  school:     Object,
 })
 
 const sidebarOpen   = ref(false)
@@ -17,6 +19,8 @@ const activeSection = ref('horarios')
 const navItems = [
   { id: 'horarios',   label: 'Mis Horarios' },
   { id: 'asistencia', label: 'Asistencia' },
+  { id: 'reportes',   label: 'Reportes' },
+  { id: 'configuracion', label: 'Configuracion' },
 ]
 
 const currentSectionLabel = computed(
@@ -127,6 +131,127 @@ const horariosFiltrados = computed(() => {
 const seleccionarHorario = (horario) => {
   horarioSeleccionado.value = horario
   mostrarScanner.value      = false
+}
+
+const gradoReporteFiltro = ref(null)
+const seccionReporteFiltro = ref(null)
+const modoFechaReporteGeneral = ref('all')
+const fechaReporteGeneral = ref('')
+const cursoReporteFiltro = ref(null)
+const gradoCursoFiltro = ref(null)
+const seccionCursoFiltro = ref(null)
+const modoFechaReporteCurso = ref('all')
+const fechaReporteCurso = ref('')
+const descargandoReporteGeneral = ref(false)
+const descargandoReporteCurso = ref(false)
+
+const seccionesReporteFiltro = computed(() => {
+  if (!gradoReporteFiltro.value) return []
+  const grado = props.grados.find((item) => item.id === gradoReporteFiltro.value)
+  return grado?.sections ?? []
+})
+
+const seccionesCursoFiltro = computed(() => {
+  if (!gradoCursoFiltro.value) return []
+  const grado = props.grados.find((item) => item.id === gradoCursoFiltro.value)
+  return grado?.sections ?? []
+})
+
+const descargarReporteProfesor = () => {
+  descargandoReporteGeneral.value = true
+
+  const params = {}
+  if (gradoReporteFiltro.value) params.grade_id = gradoReporteFiltro.value
+  if (seccionReporteFiltro.value) params.section_id = seccionReporteFiltro.value
+  params.date_filter_mode = modoFechaReporteGeneral.value
+  if (modoFechaReporteGeneral.value === 'date' && fechaReporteGeneral.value) params.date = fechaReporteGeneral.value
+
+  window.open(route('profesor.reports.attendance.export', params), '_blank')
+
+  window.setTimeout(() => {
+    descargandoReporteGeneral.value = false
+  }, 1200)
+}
+
+const descargarReporteCurso = () => {
+  descargandoReporteCurso.value = true
+
+  const params = {}
+  if (cursoReporteFiltro.value) params.subject_id = cursoReporteFiltro.value
+  if (gradoCursoFiltro.value) params.grade_id = gradoCursoFiltro.value
+  if (seccionCursoFiltro.value) params.section_id = seccionCursoFiltro.value
+  params.date_filter_mode = modoFechaReporteCurso.value
+  if (modoFechaReporteCurso.value === 'date' && fechaReporteCurso.value) params.date = fechaReporteCurso.value
+
+  window.open(route('profesor.reports.course-attendance.export', params), '_blank')
+
+  window.setTimeout(() => {
+    descargandoReporteCurso.value = false
+  }, 1200)
+}
+
+const perfilForm = ref({
+  name: props.auth?.user?.name ?? '',
+  email: props.auth?.user?.email ?? '',
+})
+const schoolForm = ref({
+  name: props.school?.name ?? '',
+  code: props.school?.code ?? '',
+  address: props.school?.address ?? '',
+})
+const loadingPerfil = ref(false)
+const loadingSchool = ref(false)
+const successPerfil = ref('')
+const successSchool = ref('')
+const errorPerfil = ref('')
+const errorSchool = ref('')
+
+const guardarPerfil = async () => {
+  loadingPerfil.value = true
+  successPerfil.value = ''
+  errorPerfil.value = ''
+
+  try {
+    const { data } = await axios.patch(route('app-user.settings.profile'), perfilForm.value)
+    perfilForm.value.name = data.user.name
+    perfilForm.value.email = data.user.email
+    if (props.auth?.user) {
+      props.auth.user.name = data.user.name
+      props.auth.user.email = data.user.email
+    }
+    successPerfil.value = data.message
+  } catch (err) {
+    errorPerfil.value = err.response?.data?.message
+      ?? Object.values(err.response?.data?.errors ?? {})?.[0]?.[0]
+      ?? 'No se pudo actualizar tu perfil.'
+  } finally {
+    loadingPerfil.value = false
+  }
+}
+
+const guardarColegio = async () => {
+  loadingSchool.value = true
+  successSchool.value = ''
+  errorSchool.value = ''
+
+  try {
+    const { data } = await axios.patch(route('app-user.settings.school'), schoolForm.value)
+    schoolForm.value.name = data.school.name
+    schoolForm.value.code = data.school.code
+    schoolForm.value.address = data.school.address
+    if (props.school) {
+      props.school.name = data.school.name
+      props.school.code = data.school.code
+      props.school.address = data.school.address
+    }
+    successSchool.value = data.message
+  } catch (err) {
+    errorSchool.value = err.response?.data?.message
+      ?? Object.values(err.response?.data?.errors ?? {})?.[0]?.[0]
+      ?? 'No se pudo actualizar el colegio.'
+  } finally {
+    loadingSchool.value = false
+  }
 }
 </script>
 
@@ -498,6 +623,270 @@ const seleccionarHorario = (horario) => {
             </button>
           </div>
 
+        </section>
+
+        <section v-else-if="activeSection === 'reportes'">
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-5">
+            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h3 class="text-gray-900 font-semibold text-sm">Reporte general de ingreso</h3>
+                <p class="text-gray-500 text-xs mt-1">
+                  Exporta la asistencia general del colegio desde general attendance.
+                </p>
+                <p class="text-gray-400 text-xs mt-2">
+                  Puedes descargarlo general, por grado o por seccion.
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Grado</label>
+                <select
+                  v-model="gradoReporteFiltro"
+                  @change="seccionReporteFiltro = null"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800">
+                  <option :value="null">General</option>
+                  <option v-for="grado in grados" :key="grado.id" :value="grado.id">{{ grado.name }}</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Seccion</label>
+                <select
+                  v-model="seccionReporteFiltro"
+                  :disabled="!gradoReporteFiltro"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <option :value="null">Todas las secciones</option>
+                  <option v-for="seccion in seccionesReporteFiltro" :key="seccion.id" :value="seccion.id">{{ seccion.name }}</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Fechas</label>
+                <select
+                  v-model="modoFechaReporteGeneral"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800">
+                  <option value="all">Todas las fechas</option>
+                  <option value="date">Por fecha</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Fecha</label>
+                <input
+                  v-model="fechaReporteGeneral"
+                  type="date"
+                  :disabled="modoFechaReporteGeneral !== 'date'"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"/>
+              </div>
+            </div>
+
+            <div class="mt-5 flex justify-end">
+              <button
+                @click="descargarReporteProfesor"
+                :disabled="descargandoReporteGeneral"
+                class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50">
+                <svg v-if="descargandoReporteGeneral" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                {{ descargandoReporteGeneral ? 'Preparando...' : 'Descargar Excel general' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-200 rounded-xl p-5">
+            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h3 class="text-gray-900 font-semibold text-sm">Reporte por curso</h3>
+                <p class="text-gray-500 text-xs mt-1">
+                  Exporta la asistencia tomada en clase desde attendance.
+                </p>
+                <p class="text-gray-400 text-xs mt-2">
+                  Puedes filtrar por curso y tambien por grado o seccion.
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Curso</label>
+                <select
+                  v-model="cursoReporteFiltro"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800">
+                  <option :value="null">Todos los cursos</option>
+                  <option v-for="curso in cursos" :key="curso.id" :value="curso.id">{{ curso.name }}</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Grado</label>
+                <select
+                  v-model="gradoCursoFiltro"
+                  @change="seccionCursoFiltro = null"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800">
+                  <option :value="null">Todos los grados</option>
+                  <option v-for="grado in grados" :key="grado.id" :value="grado.id">{{ grado.name }}</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Seccion</label>
+                <select
+                  v-model="seccionCursoFiltro"
+                  :disabled="!gradoCursoFiltro"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <option :value="null">Todas las secciones</option>
+                  <option v-for="seccion in seccionesCursoFiltro" :key="seccion.id" :value="seccion.id">{{ seccion.name }}</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Fechas</label>
+                <select
+                  v-model="modoFechaReporteCurso"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800">
+                  <option value="all">Todas las fechas</option>
+                  <option value="date">Por fecha</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">Fecha</label>
+                <input
+                  v-model="fechaReporteCurso"
+                  type="date"
+                  :disabled="modoFechaReporteCurso !== 'date'"
+                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"/>
+              </div>
+            </div>
+
+            <div class="mt-5 flex justify-end">
+              <button
+                @click="descargarReporteCurso"
+                :disabled="descargandoReporteCurso"
+                class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50">
+                <svg v-if="descargandoReporteCurso" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                {{ descargandoReporteCurso ? 'Preparando...' : 'Descargar Excel por curso' }}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section v-else-if="activeSection === 'configuracion'">
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+              <div class="flex items-start gap-3 mb-4">
+                <div class="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 text-white">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-gray-900 font-semibold text-sm">Mis datos</h3>
+                  <p class="text-gray-500 text-xs mt-0.5">
+                    Actualiza tu nombre y correo electronico.
+                  </p>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Nombre completo *</label>
+                  <input
+                    v-model="perfilForm.name"
+                    type="text"
+                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Correo electronico *</label>
+                  <input
+                    v-model="perfilForm.email"
+                    type="email"
+                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                </div>
+              </div>
+
+              <p v-if="errorPerfil" class="mt-4 text-red-600 text-xs bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{{ errorPerfil }}</p>
+              <div v-if="successPerfil" class="mt-4 text-green-700 text-xs bg-green-50 border border-green-200 px-3 py-2 rounded-lg">✓ {{ successPerfil }}</div>
+
+              <div class="mt-4 flex justify-end">
+                <button
+                  @click="guardarPerfil"
+                  :disabled="loadingPerfil"
+                  class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
+                  <svg v-if="loadingPerfil" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  {{ loadingPerfil ? 'Guardando...' : 'Guardar perfil' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+              <div class="flex items-start gap-3 mb-4">
+                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l9-4 9 4m-9 13V10m-7 10h14a2 2 0 002-2V8a2 2 0 00-1.106-1.789l-7-3.5a2 2 0 00-1.788 0l-7 3.5A2 2 0 003 8v10a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-gray-900 font-semibold text-sm">Datos del colegio</h3>
+                  <p class="text-gray-500 text-xs mt-0.5">
+                    Edita el nombre, codigo y direccion de la institucion.
+                  </p>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Nombre del colegio *</label>
+                  <input
+                    v-model="schoolForm.name"
+                    type="text"
+                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Codigo del colegio *</label>
+                  <input
+                    v-model="schoolForm.code"
+                    type="text"
+                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Direccion *</label>
+                  <textarea
+                    v-model="schoolForm.address"
+                    rows="4"
+                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-gray-800"/>
+                </div>
+              </div>
+
+              <p v-if="errorSchool" class="mt-4 text-red-600 text-xs bg-red-50 border border-red-200 px-3 py-2 rounded-lg">{{ errorSchool }}</p>
+              <div v-if="successSchool" class="mt-4 text-green-700 text-xs bg-green-50 border border-green-200 px-3 py-2 rounded-lg">✓ {{ successSchool }}</div>
+
+              <div class="mt-4 flex justify-end">
+                <button
+                  @click="guardarColegio"
+                  :disabled="loadingSchool"
+                  class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
+                  <svg v-if="loadingSchool" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  {{ loadingSchool ? 'Guardando...' : 'Guardar colegio' }}
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
 
       </main>

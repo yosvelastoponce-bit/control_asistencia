@@ -21,6 +21,7 @@ class AppUser extends Authenticatable
         'email',
         'password',
         'role',
+        'code',
         'can_take_general_attendance',
     ];
 
@@ -33,8 +34,27 @@ class AppUser extends Authenticatable
         return [
             'created_at' => 'datetime',
             'password'   => 'hashed',
+            'school_id'  => 'integer',
             'can_take_general_attendance' => 'boolean',
         ];
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'superadmin';
+    }
+
+    public function belongsToEnabledSchool(): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if (!$this->school_id) {
+            return false;
+        }
+
+        return (bool) optional($this->school)->is_access_enabled;
     }
 
     public function canTakeGeneralAttendance(): bool

@@ -26,6 +26,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 return '/profesor/login';
             }
 
+            if ($request->is('super-admin') || $request->is('super-admin/*')) {
+                return '/super-admin';
+            }
+
             if ($request->is('general-attendance') || $request->is('general-attendance/*')) {
                 return '/';
             }

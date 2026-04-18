@@ -15,6 +15,15 @@ class AttendanceController extends Controller
 {
     public function scan(Request $request)
     {
+        $user = Auth::guard('app_user')->user();
+
+        if (!$user || !$user->belongsToEnabledSchool()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El acceso de tu colegio esta bloqueado por el super admin.',
+            ], 403);
+        }
+
         $request->validate([
             'uuid'        => 'required|string',
             'schedule_id' => 'required|exists:schedules,id',
@@ -86,7 +95,7 @@ class AttendanceController extends Controller
             'student_id'    => $student->id,
             'schedule_id'   => $request->schedule_id,
             'qr_code_id'    => $qrCode->id,
-            'registered_by' => Auth::guard('app_user')->id(),
+            'registered_by' => $user->id,
             'date'          => $today,
             'time'          => $now,
             'status'        => $status,

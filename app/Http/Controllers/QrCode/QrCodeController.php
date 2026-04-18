@@ -24,6 +24,10 @@ class QrCodeController extends Controller
             abort(403, 'No tienes permisos para descargar codigos QR.');
         }
 
+        if (! $user->belongsToEnabledSchool()) {
+            abort(403, 'El acceso de tu colegio esta bloqueado por el super admin.');
+        }
+
         $schoolId = $user->school_id;
         $school   = \App\Models\School::find($schoolId);
 

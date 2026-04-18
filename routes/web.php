@@ -15,6 +15,9 @@ use App\Http\Controllers\Director\HorarioController;
 use App\Http\Controllers\GeneralAttendanceController;
 use App\Http\Controllers\Director\GoogleSheetController;
 use App\Http\Controllers\Director\SchoolLogoController;
+use App\Http\Controllers\Report\AttendanceReportController;
+use App\Http\Controllers\SuperAdmin\SuperAdminController;
+use App\Http\Controllers\AppUser\SettingsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -71,6 +74,11 @@ Route::post('/profesor/logout', [ProfesorLoginController::class, 'logout'])->nam
 Route::get('/general-attendance', [GeneralAttendanceController::class, 'index'])->name('general-attendance.index');
 Route::post('/general-attendance/logout', [ProfesorLoginController::class, 'logout'])->name('general-attendance.logout');
 
+Route::get('/super-admin', [SuperAdminController::class, 'showLogin'])->name('super-admin.login');
+Route::post('/super-admin/login', [SuperAdminController::class, 'login'])->name('super-admin.login.post');
+Route::get('/super-admin/register', [SuperAdminController::class, 'showRegister'])->name('super-admin.register');
+Route::post('/super-admin/register', [SuperAdminController::class, 'register'])->name('super-admin.register.post');
+
 // Rutas protegidas — solo si está logueado como profesor
 Route::middleware('auth:app_user')->group(function () {
     Route::resource('profesor', ProfesorLoginController::class)->except(['show']);
@@ -79,6 +87,8 @@ Route::middleware('auth:app_user')->group(function () {
     Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->name('attendance.scan');
     Route::post('/director/horarios', [HorarioController::class, 'store'])->name('director.horarios.store');
     Route::delete('/director/horarios/{id}', [HorarioController::class, 'destroy'])->name('director.horarios.destroy');
+    Route::patch('/settings/profile', [SettingsController::class, 'updateProfile'])->name('app-user.settings.profile');
+    Route::patch('/settings/school', [SettingsController::class, 'updateSchool'])->name('app-user.settings.school');
 });
 
 // Rutas públicas (registro y login)
@@ -125,10 +135,22 @@ Route::middleware('auth:app_user')->group(function () {
     Route::post('/director/process-absences', [GoogleSheetController::class, 'processAbsences'])->name('director.process.absences');
     // Obtener estadísticas de asistencia
     Route::get('/director/attendance-stats', [GoogleSheetController::class, 'getAttendanceStats'])->name('director.attendance.stats');
+    Route::get('/director/reports/attendance/export', [AttendanceReportController::class, 'directorExport'])
+        ->name('director.reports.attendance.export');
+    Route::get('/profesor/reports/attendance/export', [AttendanceReportController::class, 'profesorExport'])
+        ->name('profesor.reports.attendance.export');
+    Route::get('/profesor/reports/course-attendance/export', [AttendanceReportController::class, 'profesorCourseExport'])
+        ->name('profesor.reports.course-attendance.export');
 
     //Logo
     Route::post('/director/logo', [SchoolLogoController::class, 'upload'])->name('director.logo.upload');
     Route::delete('/director/logo', [SchoolLogoController::class, 'destroy'])->name('director.logo.destroy');
+
+    // Super admin
+    Route::post('/super-admin/logout', [SuperAdminController::class, 'logout'])->name('super-admin.logout');
+    Route::get('/super-admin/dashboard', [SuperAdminController::class, 'dashboard'])->name('super-admin.dashboard');
+    Route::post('/super-admin/directors', [SuperAdminController::class, 'storeDirector'])->name('super-admin.directors.store');
+    Route::patch('/super-admin/schools/{id}/access', [SuperAdminController::class, 'toggleSchoolAccess'])->name('super-admin.schools.access');
 });
 
 // Route::resource('curso', CursoController::class);
