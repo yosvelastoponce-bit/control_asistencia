@@ -50,7 +50,7 @@ class SuperAdminController extends Controller
 
     public function showRegister()
     {
-        return Inertia::render('SuperAdmin/Register');
+        // return Inertia::render('SuperAdmin/Register');
     }
 
     public function register(Request $request)

@@ -82,12 +82,12 @@ const submit = () => {
             <span>{{ loading ? 'Ingresando...' : 'Ingresar' }}</span>
           </button>
 
-          <p class="text-center text-sm text-gray-500">
+          <!-- <p class="text-center text-sm text-gray-500">
             Aun no tienes cuenta?
             <Link :href="route('super-admin.register')" class="text-gray-800 hover:text-gray-900 font-medium transition-colors">
               Crear cuenta
             </Link>
-          </p>
+          </p> -->
         </form>
       </div>
     </div>
