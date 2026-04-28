@@ -93,6 +93,12 @@
             font-weight: bold;
             color: #222;
         }
+        .student-grade-section {
+            margin-top: 2px;
+            font-size: 9px;
+            font-weight: bold;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -115,7 +121,6 @@
                             <div class="school-code">Cód: {{ $student['school_code'] ?? '' }}</div>
                         </div>
 
-                        {{-- QR con logo superpuesto usando margin negativo (compatible DomPDF) --}}
                         <div class="qr-container">
                             {{-- 1. QR --}}
                             <img class="qr-img"
@@ -138,6 +143,9 @@
 
                         {{-- Nombre del estudiante --}}
                         <div class="student-name">{{ $student['name'] }}</div>
+                        @if (!empty($student['grade_section']))
+                            <div class="student-grade-section">{{ $student['grade_section'] }}</div>
+                        @endif
 
                     </div>
                 @endforeach

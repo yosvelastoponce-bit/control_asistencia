@@ -31,10 +31,7 @@ class QrCodeController extends Controller
         $schoolId = $user->school_id;
         $school   = \App\Models\School::find($schoolId);
 
-        $students = Student::with('qrCode')
-            ->where('school_id', $schoolId)
-            ->orderBy('name')
-            ->get();
+        $students = $this->orderedStudentsQuery($schoolId)->get();
 
         // Crear QR si el estudiante no tiene uno
         foreach ($students as $student) {
@@ -56,9 +53,7 @@ class QrCodeController extends Controller
             $schoolLogo  = "data:{$mimeType};base64," . base64_encode($logoContent);
         }
 
-        $students = Student::with('qrCode')
-            ->where('school_id', $schoolId)
-            ->orderBy('name')
+        $students = $this->orderedStudentsQuery($schoolId)
             ->get()
             ->map(function ($student) use ($school, $schoolLogo) {
                 $qrSvg = \QrCode::format('svg')
@@ -66,12 +61,18 @@ class QrCodeController extends Controller
                     ->errorCorrection('H')
                     ->generate($student->qrCode->uuid);
 
+                $gradeSection = trim(implode(' ', array_filter([
+                    $this->shortGradeName($student->grade?->name),
+                    $student->section?->name,
+                ])));
+
                 return [
                     'name'        => $student->name,
                     'qr_svg'      => base64_encode($qrSvg),
                     'school_name' => $school->name ?? '',
                     'school_code' => $school->code ?? '',
                     'school_logo' => $schoolLogo,
+                    'grade_section' => $gradeSection,
                 ];
             });
 
@@ -79,5 +80,36 @@ class QrCodeController extends Controller
             ->setPaper('a4', 'portrait');
 
         return $pdf->download('codigos-qr-' . Str::slug($school->name ?? 'estudiantes') . '.pdf');
+    }
+
+    private function orderedStudentsQuery(int $schoolId)
+    {
+        return Student::query()
+            ->with(['qrCode', 'grade', 'section'])
+            ->leftJoin('grades', 'grades.id', '=', 'students.grade_id')
+            ->leftJoin('sections', 'sections.id', '=', 'students.section_id')
+            ->where('students.school_id', $schoolId)
+            ->select('students.*')
+            ->orderByRaw('CAST(grades.name AS UNSIGNED) asc')
+            ->orderBy('grades.name')
+            ->orderBy('sections.name')
+            ->orderBy('students.name');
+    }
+
+    private function shortGradeName(?string $gradeName): string
+    {
+        $gradeName = trim((string) $gradeName);
+
+        if ($gradeName === '') {
+            return '';
+        }
+
+        preg_match('/\d+/', $gradeName, $matches);
+
+        if (! isset($matches[0])) {
+            return $gradeName;
+        }
+
+        return $matches[0] . 'ro';
     }
 }
