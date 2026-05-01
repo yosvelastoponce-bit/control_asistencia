@@ -547,7 +547,7 @@ const procesarAusencias = async (force = false) => {
 
       <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto">
         <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider px-3 pt-3 pb-2">Menú</p>
-        <button v-for="item in navItems" :key="item.id"
+        <button type="button" v-for="item in navItems" :key="item.id"
           @click="activeSection = item.id; sidebarOpen = false"
           class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
           :class="activeSection === item.id ? 'bg-gray-800 text-white' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'">
@@ -564,7 +564,7 @@ const procesarAusencias = async (force = false) => {
             <p class="text-gray-500 text-xs truncate">{{ director?.email }}</p>
           </div>
         </div>
-        <button @click="logout" class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors">
+        <button type="button" @click="logout" class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors">
           Cerrar sesión
         </button>
       </div>
@@ -575,7 +575,7 @@ const procesarAusencias = async (force = false) => {
     <!-- ── Main ── -->
     <div class="lg:pl-60 min-h-screen">
       <header class="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 lg:px-8 py-4 flex items-center gap-4">
-        <button @click="sidebarOpen = true" class="lg:hidden text-gray-500">
+        <button type="button" @click="sidebarOpen = true" class="lg:hidden text-gray-500">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
           </svg>
@@ -619,7 +619,7 @@ const procesarAusencias = async (force = false) => {
                 </p>
               </div>
               <div class="flex gap-2 flex-shrink-0">
-                <button
+                <button type="button"
                   @click="procesarAusencias(false)"
                   :disabled="loadingAusencias"
                   class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
@@ -629,7 +629,7 @@ const procesarAusencias = async (force = false) => {
                   </svg>
                   {{ loadingAusencias ? 'Procesando...' : 'Procesar ausencias' }}
                 </button>
-                <button
+                <button type="button"
                   @click="procesarAusencias(true)"
                   :disabled="loadingAusencias"
                   title="Forzar procesamiento aunque el horario no haya cerrado"
@@ -658,7 +658,7 @@ const procesarAusencias = async (force = false) => {
           
           <h3 class="text-gray-700 font-semibold mb-4">Accesos rápidos</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <button v-for="item in navItems.filter(i => i.id !== 'inicio')" :key="item.id"
+            <button type="button" v-for="item in navItems.filter(i => i.id !== 'inicio')" :key="item.id"
               @click="activeSection = item.id"
               class="bg-gray-50 border border-gray-200 hover:border-gray-400 rounded-xl p-4 text-left transition-all">
               <p class="text-gray-900 text-sm font-medium">{{ item.label }}</p>
@@ -672,7 +672,7 @@ const procesarAusencias = async (force = false) => {
           <!-- <pre>{{ listaProfesores[0] }}</pre> -->
           <div class="flex items-center justify-between mb-5">
             <p class="text-gray-500 text-sm">Profesores de tu institución.</p>
-            <button @click="mostrarFormProfesor = !mostrarFormProfesor"
+            <button type="button" @click="mostrarFormProfesor = !mostrarFormProfesor"
               class="bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
               {{ mostrarFormProfesor ? 'Cancelar' : '+ Agregar profesor' }}
             </button>
@@ -706,7 +706,7 @@ const procesarAusencias = async (force = false) => {
               </div>
             </div>
             <div class="mt-4 flex justify-end">
-              <button @click="guardarProfesor" :disabled="loadingProfesor"
+              <button type="button" @click="guardarProfesor" :disabled="loadingProfesor"
                 class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
                 {{ loadingProfesor ? 'Guardando...' : 'Guardar profesor' }}
               </button>
@@ -732,7 +732,7 @@ const procesarAusencias = async (force = false) => {
                   <td class="px-5 py-3 text-gray-500">{{ p.app_user?.email ?? p.email ?? '—' }}</td>
                   <td class="px-5 py-3 text-gray-500">{{ p.specialty ?? '—' }}</td>
                   <td class="px-5 py-3">
-                    <button
+                    <button type="button"
                       @click="togglePermisoAsistenciaProfesor(p)"
                       :disabled="togglingProfesorId === p.id"
                       class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-60"
@@ -750,7 +750,7 @@ const procesarAusencias = async (force = false) => {
                     </button>
                   </td>
                   <td class="px-5 py-3 text-right">
-                    <button @click="eliminarProfesor(p.id)" class="text-red-600 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors">Eliminar</button>
+                    <button type="button" @click="eliminarProfesor(p.id)" class="text-red-600 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors">Eliminar</button>
                   </td>
                 </tr>
               </tbody>
@@ -762,7 +762,7 @@ const procesarAusencias = async (force = false) => {
         <section v-else-if="activeSection === 'estudiantes'">
           <div v-if="successMsg" class="mb-5 bg-green-50 border border-green-300 text-green-700 text-sm px-4 py-3 rounded-lg flex items-center justify-between">
             <span>{{ successMsg }}</span>
-            <button @click="successMsg = ''" class="text-green-700 hover:text-gray-900 ml-4">✕</button>
+            <button type="button" @click="successMsg = ''" class="text-green-700 hover:text-gray-900 ml-4">✕</button>
           </div>
           <p v-if="erroresEstudiante._general" class="mb-5 text-red-600 text-sm bg-red-50 px-4 py-3 rounded-lg border border-red-300">{{ erroresEstudiante._general }}</p>
 
@@ -805,7 +805,7 @@ const procesarAusencias = async (force = false) => {
               </div>
               <p v-if="erroresEstudiante.grade" class="text-red-600 text-xs mb-3">{{ erroresEstudiante.grade[0] }}</p>
               <div class="space-y-2">
-                <button v-for="grado in gradosDisponibles" :key="grado.id" @click="seleccionarGrado(grado)"
+                <button type="button" v-for="grado in gradosDisponibles" :key="grado.id" @click="seleccionarGrado(grado)"
                   class="w-full text-left px-4 py-3 rounded-lg border text-sm font-medium transition-all"
                   :class="gradoSeleccionado?.id === grado.id ? 'bg-gray-800 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-700 hover:border-gray-800'">
                   <div class="flex items-center justify-between">
@@ -825,7 +825,7 @@ const procesarAusencias = async (force = false) => {
               </div>
               <p v-if="erroresEstudiante.section" class="text-red-600 text-xs mb-3">{{ erroresEstudiante.section[0] }}</p>
               <div class="grid grid-cols-2 gap-2">
-                <button v-for="seccion in seccionesDisponibles" :key="seccion" @click="seleccionarSeccion(seccion)"
+                <button type="button" v-for="seccion in seccionesDisponibles" :key="seccion" @click="seleccionarSeccion(seccion)"
                   class="px-4 py-3 rounded-lg border text-sm font-medium transition-all text-center"
                   :class="seccionSeleccionada === seccion ? 'bg-gray-800 border-gray-800 text-white' : 'bg-white border-gray-300 text-gray-700 hover:border-gray-800'">
                   {{ seccion }}
@@ -839,7 +839,7 @@ const procesarAusencias = async (force = false) => {
           </div>
 
           <div class="flex justify-end mb-8">
-            <button @click="guardarEstudiante" :disabled="loadingEstudiante"
+            <button type="button" @click="guardarEstudiante" :disabled="loadingEstudiante"
               class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white font-semibold px-8 py-3 rounded-lg transition-colors flex items-center gap-2">
               <svg v-if="loadingEstudiante" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -852,7 +852,7 @@ const procesarAusencias = async (force = false) => {
           <!-- Carga masiva -->
           <div class="flex items-center gap-3 mb-6">
             <div class="flex-1 h-px bg-gray-200"/>
-            <button @click="mostrarCargaMasiva = !mostrarCargaMasiva"
+            <button type="button" @click="mostrarCargaMasiva = !mostrarCargaMasiva"
               class="flex items-center gap-2 text-gray-500 hover:text-gray-900 text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-300 hover:border-gray-500 transition-colors">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
@@ -883,9 +883,9 @@ const procesarAusencias = async (force = false) => {
               <p class="text-green-700 text-sm font-semibold">✓ {{ resultadoCarga }}</p>
             </div>
             <div class="mt-4 flex justify-end gap-2">
-              <button @click="archivoSeleccionado = null; erroresCarga = []; resultadoCarga = ''"
+              <button type="button" @click="archivoSeleccionado = null; erroresCarga = []; resultadoCarga = ''"
                 class="text-gray-500 hover:text-gray-900 text-sm px-4 py-2 rounded-lg border border-gray-300 transition-colors">Limpiar</button>
-              <button @click="subirArchivo" :disabled="!archivoSeleccionado || loadingCarga"
+              <button type="button" @click="subirArchivo" :disabled="!archivoSeleccionado || loadingCarga"
                 class="bg-gray-800 hover:bg-gray-900 disabled:opacity-40 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
                 <svg v-if="loadingCarga" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -930,7 +930,7 @@ const procesarAusencias = async (force = false) => {
                     <span v-else class="text-gray-400 text-xs">Sin QR</span>
                   </td>
                   <td class="px-5 py-3 text-right">
-                    <button @click="eliminarEstudiante(e.id)" class="text-red-600 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors">Eliminar</button>
+                    <button type="button" @click="eliminarEstudiante(e.id)" class="text-red-600 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors">Eliminar</button>
                   </td>
                 </tr>
               </tbody>
@@ -987,7 +987,7 @@ const procesarAusencias = async (force = false) => {
                 Mostrando <span class="font-semibold text-gray-900">{{ estudiantesFiltrados.length }}</span>
                 de <span class="font-semibold text-gray-900">{{ estudiantes.length }}</span> estudiantes
               </p>
-              <button v-if="busquedaEstudiante || gradoFiltro || seccionFiltro"
+              <button type="button" v-if="busquedaEstudiante || gradoFiltro || seccionFiltro"
                 @click="limpiarFiltros"
                 class="text-gray-500 hover:text-gray-900 text-xs px-3 py-1.5 rounded-lg border border-gray-300 hover:border-gray-500 transition-colors">
                 Limpiar filtros
@@ -1021,7 +1021,7 @@ const procesarAusencias = async (force = false) => {
                   </div>
                 </div>
               </div>
-              <button
+              <button type="button"
                 @click="descargarReporteAsistencias"
                 :disabled="descargandoReporteExcel"
                 class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50">
@@ -1046,7 +1046,7 @@ const procesarAusencias = async (force = false) => {
               </h3>
               <div class="flex items-center gap-3">
                 <span class="text-gray-400 text-xs">{{ estudiantesFiltrados.length }} estudiantes</span>
-                <button
+                <button type="button"
                   @click="mostrarTablaReportes = !mostrarTablaReportes"
                   class="text-gray-500 hover:text-gray-900 text-xs px-3 py-1.5 rounded-lg border border-gray-300 hover:border-gray-500 transition-colors">
                   {{ mostrarTablaReportes ? 'Ocultar tabla' : 'Mostrar tabla' }}
@@ -1105,11 +1105,11 @@ const procesarAusencias = async (force = false) => {
               <div class="flex gap-2">
                 <input v-model="nombreCurso" type="text" placeholder="Ej: Matemática..." @keyup.enter="guardarCurso"
                   class="flex-1 bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-800"/>
-                <button @click="guardarCurso" :disabled="loadingCurso"
+                <button type="button" @click="guardarCurso" :disabled="loadingCurso"
                   class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap">
                   {{ editandoCurso ? 'Actualizar' : 'Agregar' }}
                 </button>
-                <button v-if="editandoCurso" @click="editandoCurso = null; nombreCurso = ''"
+                <button type="button" v-if="editandoCurso" @click="editandoCurso = null; nombreCurso = ''"
                   class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-3 py-2.5 rounded-lg transition-colors">✕</button>
               </div>
               <p v-if="errorCurso" class="text-red-600 text-xs mt-2">{{ errorCurso }}</p>
@@ -1121,9 +1121,9 @@ const procesarAusencias = async (force = false) => {
                 :class="idx < listaCursos.length - 1 ? 'border-b border-gray-200' : ''">
                 <span class="text-gray-900 text-sm">{{ item.name }}</span>
                 <div class="flex gap-2">
-                  <button @click="editandoCurso = item.id; nombreCurso = item.name"
+                  <button type="button" @click="editandoCurso = item.id; nombreCurso = item.name"
                     class="text-gray-500 hover:text-gray-900 text-xs px-2 py-1 rounded hover:bg-gray-100 transition-colors">Editar</button>
-                  <button @click="eliminarCurso(item.id)"
+                  <button type="button" @click="eliminarCurso(item.id)"
                     class="text-gray-500 hover:text-red-600 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors">Eliminar</button>
                 </div>
               </div>
@@ -1254,7 +1254,7 @@ const procesarAusencias = async (force = false) => {
                   class="w-16 h-16 object-contain rounded-xl border border-gray-200 bg-white p-1"/>
                 <div>
                   <p class="text-gray-700 text-xs font-medium mb-1">Logo actual</p>
-                  <button @click="eliminarLogo"
+                  <button type="button" @click="eliminarLogo"
                     class="text-red-600 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors border border-red-200">
                     Eliminar logo
                   </button>
@@ -1337,7 +1337,7 @@ const procesarAusencias = async (force = false) => {
                 <div v-if="successSheet" class="text-green-700 text-xs bg-green-50 border border-green-200 px-3 py-2 rounded-lg">✓ {{ successSheet }}</div>
 
                 <div class="flex justify-end">
-                  <button @click="guardarGoogleSheet" :disabled="loadingSheet"
+                  <button type="button" @click="guardarGoogleSheet" :disabled="loadingSheet"
                     class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
                     <svg v-if="loadingSheet" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -1423,7 +1423,7 @@ const procesarAusencias = async (force = false) => {
               </div>
              
               <div class="flex justify-end">
-                <button @click="guardarHorarioEntrada" :disabled="loadingSchedule"
+                <button type="button" @click="guardarHorarioEntrada" :disabled="loadingSchedule"
                   class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
                   <svg v-if="loadingSchedule" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -1441,6 +1441,7 @@ const procesarAusencias = async (force = false) => {
     </div>
   </div>
 </template>
+
 
 
 
