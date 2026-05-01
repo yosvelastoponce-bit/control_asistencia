@@ -277,7 +277,7 @@ const guardarColegio = async () => {
 
       <nav class="flex-1 p-3 space-y-0.5 overflow-y-auto">
         <p class="text-gray-400 text-xs font-semibold uppercase tracking-wider px-3 pt-3 pb-2">Menú</p>
-        <button
+        <button type="button"
           v-for="item in navItems" :key="item.id"
           @click="activeSection = item.id; sidebarOpen = false"
           class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
@@ -299,7 +299,7 @@ const guardarColegio = async () => {
             <p class="text-gray-500 text-xs truncate">{{ auth?.user?.email }}</p>
           </div>
         </div>
-        <button @click="logout"
+        <button type="button" @click="logout"
           class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors">
           Cerrar sesión
         </button>
@@ -313,7 +313,7 @@ const guardarColegio = async () => {
     <div class="lg:pl-60 min-h-screen">
 
       <header class="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 lg:px-8 py-4 flex items-center gap-4">
-        <button @click="sidebarOpen = true" class="lg:hidden text-gray-500">
+        <button type="button" @click="sidebarOpen = true" class="lg:hidden text-gray-500">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
           </svg>
@@ -330,13 +330,13 @@ const guardarColegio = async () => {
           <div v-if="successHorario"
             class="mb-5 bg-green-50 border border-green-300 text-green-700 text-sm px-4 py-3 rounded-lg flex items-center justify-between">
             <span>{{ successHorario }}</span>
-            <button @click="successHorario = ''" class="ml-4 text-green-700 hover:text-gray-900">✕</button>
+            <button type="button" @click="successHorario = ''" class="ml-4 text-green-700 hover:text-gray-900">✕</button>
           </div>
 
           <!-- Header -->
           <div class="flex items-center justify-between mb-5">
             <p class="text-gray-500 text-sm">Gestiona tus horarios de clase.</p>
-            <button
+            <button type="button"
               @click="mostrarFormHorario = !mostrarFormHorario; if(!mostrarFormHorario) resetFormHorario()"
               class="bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
               {{ mostrarFormHorario ? 'Cancelar' : '+ Agregar horario' }}
@@ -455,7 +455,7 @@ const guardarColegio = async () => {
             </div>
 
             <div class="mt-5 flex justify-end">
-              <button @click="guardarHorario" :disabled="loadingHorario"
+              <button type="button" @click="guardarHorario" :disabled="loadingHorario"
                 class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition-colors flex items-center gap-2">
                 <svg v-if="loadingHorario" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -497,7 +497,7 @@ const guardarColegio = async () => {
                   <td class="px-5 py-3 text-gray-500 font-mono text-xs">{{ h.start_time }}</td>
                   <td class="px-5 py-3 text-gray-500 font-mono text-xs">{{ h.end_time }}</td>
                   <td class="px-5 py-3 text-right">
-                    <button @click="eliminarHorario(h.id)"
+                    <button type="button" @click="eliminarHorario(h.id)"
                       class="text-red-600 hover:text-red-700 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors">
                       Eliminar
                     </button>
@@ -528,7 +528,7 @@ const guardarColegio = async () => {
           <div class="mb-5">
             <p class="text-gray-500 text-sm mb-3">Selecciona un horario para registrar asistencia.</p>
             <div class="flex gap-2 flex-wrap">
-              <button
+              <button type="button"
                 @click="diaFiltrado = ''"
                 class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border"
                 :class="diaFiltrado === ''
@@ -536,7 +536,7 @@ const guardarColegio = async () => {
                   : 'bg-white text-gray-600 border-gray-300 hover:border-gray-500'">
                 Todos
               </button>
-              <button
+              <button type="button"
                 v-for="dia in diasDisponibles" :key="dia"
                 @click="diaFiltrado = dia"
                 class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border"
@@ -611,7 +611,7 @@ const guardarColegio = async () => {
                 {{ horarioSeleccionado.start_time }} – {{ horarioSeleccionado.end_time }}
               </p>
             </div>
-            <button
+            <button type="button"
               @click="mostrarScanner = true"
               class="flex items-center gap-2 bg-gray-800 hover:bg-gray-900 text-white font-medium text-sm px-5 py-2.5 rounded-lg transition-colors whitespace-nowrap">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -683,7 +683,7 @@ const guardarColegio = async () => {
             </div>
 
             <div class="mt-5 flex justify-end">
-              <button
+              <button type="button"
                 @click="descargarReporteProfesor"
                 :disabled="descargandoReporteGeneral"
                 class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50">
@@ -763,7 +763,7 @@ const guardarColegio = async () => {
             </div>
 
             <div class="mt-5 flex justify-end">
-              <button
+              <button type="button"
                 @click="descargarReporteCurso"
                 :disabled="descargandoReporteCurso"
                 class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50">
@@ -816,7 +816,7 @@ const guardarColegio = async () => {
               <div v-if="successPerfil" class="mt-4 text-green-700 text-xs bg-green-50 border border-green-200 px-3 py-2 rounded-lg">✓ {{ successPerfil }}</div>
 
               <div class="mt-4 flex justify-end">
-                <button
+                <button type="button"
                   @click="guardarPerfil"
                   :disabled="loadingPerfil"
                   class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
@@ -874,7 +874,7 @@ const guardarColegio = async () => {
               <div v-if="successSchool" class="mt-4 text-green-700 text-xs bg-green-50 border border-green-200 px-3 py-2 rounded-lg">✓ {{ successSchool }}</div>
 
               <div class="mt-4 flex justify-end">
-                <button
+                <button type="button"
                   @click="guardarColegio"
                   :disabled="loadingSchool"
                   class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
@@ -893,3 +893,4 @@ const guardarColegio = async () => {
     </div>
   </div>
 </template>
+
