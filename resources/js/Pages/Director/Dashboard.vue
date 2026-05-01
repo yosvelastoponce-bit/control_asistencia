@@ -1169,7 +1169,7 @@ const procesarAusencias = async (force = false) => {
                 <div v-if="successProfile" class="mt-4 text-green-700 text-xs bg-green-50 border border-green-200 px-3 py-2 rounded-lg">? {{ successProfile }}</div>
 
                 <div class="mt-4 flex justify-end">
-                  <button @click="guardarPerfil" :disabled="loadingProfile"
+                  <button type="button" @click="guardarPerfil" :disabled="loadingProfile"
                     class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
                     <svg v-if="loadingProfile" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -1219,7 +1219,7 @@ const procesarAusencias = async (force = false) => {
                 <div v-if="successSchoolData" class="mt-4 text-green-700 text-xs bg-green-50 border border-green-200 px-3 py-2 rounded-lg">? {{ successSchoolData }}</div>
 
                 <div class="mt-4 flex justify-end">
-                  <button @click="guardarDatosColegio" :disabled="loadingSchoolData"
+                  <button type="button" @click="guardarDatosColegio" :disabled="loadingSchoolData"
                     class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
                     <svg v-if="loadingSchoolData" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -1441,6 +1441,7 @@ const procesarAusencias = async (force = false) => {
     </div>
   </div>
 </template>
+
 
 
 

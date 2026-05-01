@@ -817,6 +817,7 @@ const guardarColegio = async () => {
 
               <div class="mt-4 flex justify-end">
                 <button
+                  type="button"
                   @click="guardarPerfil"
                   :disabled="loadingPerfil"
                   class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
@@ -875,6 +876,7 @@ const guardarColegio = async () => {
 
               <div class="mt-4 flex justify-end">
                 <button
+                  type="button"
                   @click="guardarColegio"
                   :disabled="loadingSchool"
                   class="bg-gray-800 hover:bg-gray-900 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
