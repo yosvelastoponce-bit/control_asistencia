@@ -5,6 +5,11 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title inertia>{{ config('app.name') }}</title>
+        <link rel="icon" type="image/png" href="{{ asset('logo_app.png') }}">
+        <link rel="apple-touch-icon" href="{{ asset('logo_app.png') }}">
+        <meta name="msapplication-TileImage" content="{{ asset('logo_app.png') }}">
+        <meta property="og:image" content="{{ asset('logo_app.png') }}">
+        <meta name="twitter:image" content="{{ asset('logo_app.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

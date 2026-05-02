@@ -30,6 +30,7 @@ class QrCodeController extends Controller
 
         $schoolId = $user->school_id;
         $school   = \App\Models\School::find($schoolId);
+        $appLogoPath = public_path('logo_app_qr.png');
 
         $students = $this->orderedStudentsQuery($schoolId)->get();
 
@@ -51,6 +52,11 @@ class QrCodeController extends Controller
             $extension   = pathinfo($school->logo_path, PATHINFO_EXTENSION);
             $mimeType    = $extension === 'png' ? 'image/png' : 'image/jpeg';
             $schoolLogo  = "data:{$mimeType};base64," . base64_encode($logoContent);
+        }
+
+        $appLogo = null;
+        if (file_exists($appLogoPath)) {
+            $appLogo = 'data:image/png;base64,' . base64_encode(file_get_contents($appLogoPath));
         }
 
         $students = $this->orderedStudentsQuery($schoolId)
@@ -76,7 +82,10 @@ class QrCodeController extends Controller
                 ];
             });
 
-        $pdf = Pdf::loadView('pdf.qrcodes', ['students' => $students])
+        $pdf = Pdf::loadView('pdf.qrcodes', [
+                'students' => $students,
+                'app_logo' => $appLogo,
+            ])
             ->setPaper('a4', 'portrait');
 
         return $pdf->download('codigos-qr-' . Str::slug($school->name ?? 'estudiantes') . '.pdf');

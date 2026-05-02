@@ -128,12 +128,12 @@
                                 alt="QR"/>
 
                             {{-- 2. Logo encima usando tabla con margin negativo --}}
-                            @if(!empty($student['school_logo']))
+                            @if(!empty($app_logo))
                                 <table class="logo-overlay-table" cellpadding="0" cellspacing="0">
                                     <tr>
                                         <td>
                                             <img class="logo-center"
-                                                src="{{ $student['school_logo'] }}"
+                                                src="{{ $app_logo }}"
                                                 alt="Logo"/>
                                         </td>
                                     </tr>
