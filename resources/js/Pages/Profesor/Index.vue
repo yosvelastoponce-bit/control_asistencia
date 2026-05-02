@@ -106,7 +106,7 @@ const guardarHorario = async () => {
 const eliminarHorario = async (id) => {
   if (!confirm('¿Eliminar este horario?')) return
   try {
-    await axios.delete(route('director.horarios.destroy', id))
+    await axios.post(route('director.horarios.destroy', id), { _method: 'DELETE' })
     listaHorarios.value = listaHorarios.value.filter(h => h.id !== id)
   } catch (err) {
     alert(err.response?.data?.message ?? 'No se pudo eliminar.')
@@ -212,7 +212,10 @@ const guardarPerfil = async () => {
   errorPerfil.value = ''
 
   try {
-    const { data } = await axios.patch(route('app-user.settings.profile'), perfilForm.value)
+    const { data } = await axios.post(route('app-user.settings.profile'), {
+      ...perfilForm.value,
+      _method: 'PATCH',
+    })
     perfilForm.value.name = data.user.name
     perfilForm.value.email = data.user.email
     if (props.auth?.user) {
@@ -235,7 +238,10 @@ const guardarColegio = async () => {
   errorSchool.value = ''
 
   try {
-    const { data } = await axios.patch(route('app-user.settings.school'), schoolForm.value)
+    const { data } = await axios.post(route('app-user.settings.school'), {
+      ...schoolForm.value,
+      _method: 'PATCH',
+    })
     schoolForm.value.name = data.school.name
     schoolForm.value.code = data.school.code
     schoolForm.value.address = data.school.address
@@ -893,4 +899,3 @@ const guardarColegio = async () => {
     </div>
   </div>
 </template>
-

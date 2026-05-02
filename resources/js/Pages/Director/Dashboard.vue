@@ -53,7 +53,7 @@ const guardarCurso = async () => {
   errorCurso.value   = ''
   try {
     if (editandoCurso.value) {
-      const { data } = await axios.put(route('director.cursos.update', editandoCurso.value), { name: nombre })
+      const { data } = await axios.post(route('director.cursos.update', editandoCurso.value), { name: nombre, _method: 'PUT' })
       const idx = listaCursos.value.findIndex(i => i.id === editandoCurso.value)
       if (idx !== -1) listaCursos.value[idx] = data
       editandoCurso.value = null
@@ -72,7 +72,7 @@ const guardarCurso = async () => {
 const eliminarCurso = async (id) => {
   if (!confirm('¿Eliminar este curso?')) return
   try {
-    await axios.delete(route('director.cursos.destroy', id))
+    await axios.post(route('director.cursos.destroy', id), { _method: 'DELETE' })
     listaCursos.value = listaCursos.value.filter(i => i.id !== id)
   } catch (err) {
     alert(err.response?.data?.message ?? 'No se pudo eliminar.')
@@ -112,7 +112,7 @@ const guardarProfesor = async () => {
 const eliminarProfesor = async (id) => {
   if (!confirm('¿Eliminar este profesor?')) return
   try {
-    await axios.delete(route('director.profesores.destroy', id))
+    await axios.post(route('director.profesores.destroy', id), { _method: 'DELETE' })
     listaProfesores.value = listaProfesores.value.filter(p => p.id !== id)
   } catch (err) {
     alert(err.response?.data?.message ?? 'No se pudo eliminar.')
@@ -124,9 +124,9 @@ const togglePermisoAsistenciaProfesor = async (profesor) => {
   togglingProfesorId.value = profesor.id
 
   try {
-    const { data } = await axios.patch(
+    const { data } = await axios.post(
       route('director.profesores.attendance-permission', profesor.id),
-      { can_take_general_attendance: !permisoActual }
+      { can_take_general_attendance: !permisoActual, _method: 'PATCH' }
     )
 
     const idx = listaProfesores.value.findIndex(p => p.id === profesor.id)
@@ -206,7 +206,7 @@ const guardarEstudiante = async () => {
 const eliminarEstudiante = async (id) => {
   if (!confirm('¿Eliminar este estudiante?')) return
   try {
-    await axios.delete(route('director.estudiantes.destroy', id))
+    await axios.post(route('director.estudiantes.destroy', id), { _method: 'DELETE' })
     listaEstudiantes.value = listaEstudiantes.value.filter(e => e.id !== id)
   } catch (err) {
     alert(err.response?.data?.message ?? 'No se pudo eliminar.')
@@ -285,7 +285,7 @@ const guardarPerfil = async () => {
   errorProfile.value = ''
 
   try {
-    const { data } = await axios.patch(route('app-user.settings.profile'), profileForm.value)
+    const { data } = await axios.post(route('app-user.settings.profile'), { ...profileForm.value, _method: 'PATCH' })
     profileForm.value.name = data.user.name
     profileForm.value.email = data.user.email
     if (props.director) {
@@ -308,7 +308,7 @@ const guardarDatosColegio = async () => {
   errorSchoolData.value = ''
 
   try {
-    const { data } = await axios.patch(route('app-user.settings.school'), schoolForm.value)
+    const { data } = await axios.post(route('app-user.settings.school'), { ...schoolForm.value, _method: 'PATCH' })
     schoolForm.value.name = data.school.name
     schoolForm.value.code = data.school.code
     schoolForm.value.address = data.school.address
@@ -491,7 +491,7 @@ const onLogoChange = async (e) => {
 const eliminarLogo = async () => {
   if (!confirm('¿Eliminar el logo del colegio?')) return
   try {
-    await axios.delete(route('director.logo.destroy'))
+    await axios.post(route('director.logo.destroy'), { _method: 'DELETE' })
     logoUrl.value     = null
     successLogo.value = 'Logo eliminado.'
   } catch (err) {
@@ -1441,6 +1441,7 @@ const procesarAusencias = async (force = false) => {
     </div>
   </div>
 </template>
+
 
 
 
